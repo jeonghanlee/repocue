@@ -1,0 +1,45 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/evaluation-v3.schema.json",
+  "title": "RepoCue M2 condition report version 3",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "generated_at",
+    "maintenance_id",
+    "condition",
+    "condition_order",
+    "run_index",
+    "benchmark_version",
+    "output_schema_version",
+    "repocue_snapshot",
+    "repository",
+    "baseline",
+    "update",
+    "cue",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "repocue/evaluation-3"},
+    "kind": {"type": "string", "const": "m2-condition"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "maintenance_id": {"type": "string", "minLength": 1},
+    "condition": {
+      "type": "string",
+      "enum": ["direct", "placebo", "basic", "ranked", "structural-oracle"]
+    },
+    "condition_order": {"type": "integer", "minimum": 1, "maximum": 5},
+    "run_index": {"type": "integer", "minimum": 1},
+    "benchmark_version": {"type": "string", "const": "repository-state-v2"},
+    "output_schema_version": {"type": "string", "const": "repocue/benchmark-answer-2"},
+    "repocue_snapshot": {"type": "string", "minLength": 1},
+    "repository": {"type": "object"},
+    "baseline": {"type": "object"},
+    "update": {"type": "object"},
+    "cue": {"type": "object"},
+    "runner": {"type": "object"},
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

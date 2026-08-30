@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/evaluation-v1.schema.json",
+  "title": "RepoCue core evaluation report version 1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "generated_at",
+    "repository",
+    "baseline",
+    "update",
+    "cue",
+    "direct",
+    "assisted",
+    "comparison",
+    "reuse",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"const": "repocue/evaluation-1"},
+    "kind": {"const": "core-evaluation"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "repository": {
+      "type": "object",
+      "required": ["id", "name", "root", "branch", "head", "dirty", "tracked_files", "present_files", "tracked_bytes"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1},
+        "root": {"type": "string", "minLength": 1},
+        "branch": {"type": ["string", "null"]},
+        "head": {"type": ["string", "null"]},
+        "dirty": {"type": "boolean"},
+        "tracked_files": {"type": "integer", "minimum": 0},
+        "present_files": {"type": "integer", "minimum": 0},
+        "tracked_bytes": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "baseline": {"$ref": "#/$defs/operation"},
+    "update": {"$ref": "#/$defs/operation"},
+    "cue": {
+      "type": "object",
+      "required": ["view", "wall_duration_ms", "output_bytes", "estimated_tokens", "max_tokens"],
+      "properties": {
+        "view": {"const": "overview"},
+        "wall_duration_ms": {"type": "number", "minimum": 0},
+        "output_bytes": {"type": "integer", "minimum": 1},
+        "estimated_tokens": {"type": "integer", "minimum": 1},
+        "max_tokens": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "direct": {"$ref": "#/$defs/arm"},
+    "assisted": {"$ref": "#/$defs/arm"},
+    "comparison": {"type": "object"},
+    "reuse": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "items": {"type": "object"}
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "measurement": {
+      "type": "object",
+      "required": ["status", "unit"],
+      "properties": {
+        "status": {"enum": ["observed", "not_observed"]},
+        "value": {"type": "number"},
+        "unit": {"type": "string", "minLength": 1}
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"status": {"const": "observed"}}},
+          "then": {"required": ["value"]},
+          "else": {"not": {"required": ["value"]}}
+        }
+      ],
+      "additionalProperties": false
+    },
+    "operation": {
+      "type": "object",
+      "required": ["kind", "wall_duration_ms", "scan_duration_ms", "files_scanned", "bytes_scanned", "git_commands", "changed", "database_size_bytes", "materialized_file_rows"],
+      "properties": {
+        "kind": {"enum": ["full", "no-op"]},
+        "wall_duration_ms": {"type": "number", "minimum": 0},
+        "scan_duration_ms": {"type": "number", "minimum": 0},
+        "files_scanned": {"type": "integer", "minimum": 0},
+        "bytes_scanned": {"type": "integer", "minimum": 0},
+        "git_commands": {"type": "integer", "minimum": 0},
+        "changed": {"type": "boolean"},
+        "database_size_bytes": {"type": "integer", "minimum": 0},
+        "materialized_file_rows": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "arm": {
+      "type": "object",
+      "required": ["status", "runner_wall_duration", "agent_tokens", "repository_files_read", "repository_bytes_read", "git_calls", "search_calls", "tool_calls", "task_ready_latency", "fallback_repository_files_read", "fallback_repository_bytes_read", "context_correctness", "context_completeness", "tokenizer_counts", "findings"],
+      "properties": {
+        "status": {"enum": ["observed", "not_observed"]},
+        "runner_wall_duration": {"$ref": "#/$defs/measurement"},
+        "agent_tokens": {"$ref": "#/$defs/measurement"},
+        "repository_files_read": {"$ref": "#/$defs/measurement"},
+        "repository_bytes_read": {"$ref": "#/$defs/measurement"},
+        "git_calls": {"$ref": "#/$defs/measurement"},
+        "search_calls": {"$ref": "#/$defs/measurement"},
+        "tool_calls": {"$ref": "#/$defs/measurement"},
+        "task_ready_latency": {"$ref": "#/$defs/measurement"},
+        "fallback_repository_files_read": {"$ref": "#/$defs/measurement"},
+        "fallback_repository_bytes_read": {"$ref": "#/$defs/measurement"},
+        "context_correctness": {"$ref": "#/$defs/measurement"},
+        "context_completeness": {"$ref": "#/$defs/measurement"},
+        "tokenizer_counts": {"type": "array"},
+        "findings": {"type": "array"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

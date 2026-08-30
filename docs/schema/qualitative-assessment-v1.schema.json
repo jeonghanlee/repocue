@@ -1,0 +1,39 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/qualitative-assessment-v1.schema.json",
+  "title": "RepoCue qualitative benchmark assessment version 1",
+  "type": "object",
+  "required": ["schema_version", "benchmark_version", "repository_head", "arm", "assessor", "dimensions", "findings"],
+  "properties": {
+    "schema_version": {"const": "repocue/qualitative-assessment-1"},
+    "benchmark_version": {"const": "repository-state-v1"},
+    "repository_head": {"type": ["string", "null"]},
+    "arm": {"enum": ["direct", "assisted"]},
+    "assessor": {"type": "string", "minLength": 1},
+    "dimensions": {
+      "type": "object",
+      "required": ["project_purpose", "architecture", "documentation", "recent_changes", "uncertainty_handling"],
+      "properties": {
+        "project_purpose": {"$ref": "#/$defs/dimension"},
+        "architecture": {"$ref": "#/$defs/dimension"},
+        "documentation": {"$ref": "#/$defs/dimension"},
+        "recent_changes": {"$ref": "#/$defs/dimension"},
+        "uncertainty_handling": {"$ref": "#/$defs/dimension"}
+      },
+      "additionalProperties": false
+    },
+    "findings": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "dimension": {
+      "type": "object",
+      "required": ["score", "evidence"],
+      "properties": {
+        "score": {"type": "number", "minimum": 0, "maximum": 1},
+        "evidence": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

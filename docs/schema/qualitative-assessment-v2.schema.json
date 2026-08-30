@@ -1,0 +1,51 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/qualitative-assessment-v2.schema.json",
+  "title": "RepoCue blinded qualitative assessment version 2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "assessor",
+    "response_id",
+    "condition",
+    "repository_head",
+    "state_fingerprint",
+    "run_index",
+    "scores",
+    "evidence"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "repocue/qualitative-assessment-2"},
+    "assessor": {"type": "string", "minLength": 1},
+    "response_id": {"type": "string", "minLength": 1},
+    "condition": {
+      "type": "string",
+      "enum": ["direct", "placebo", "basic", "ranked", "structural-oracle"]
+    },
+    "repository_head": {"type": ["string", "null"]},
+    "state_fingerprint": {"type": "string", "minLength": 1},
+    "run_index": {"type": "integer", "minimum": 1},
+    "scores": {
+      "type": "object",
+      "required": [
+        "purpose",
+        "architecture",
+        "documentation",
+        "recent_changes",
+        "structural_completeness",
+        "uncertainty_handling"
+      ],
+      "properties": {
+        "purpose": {"type": "integer", "minimum": 0, "maximum": 4},
+        "architecture": {"type": "integer", "minimum": 0, "maximum": 4},
+        "documentation": {"type": "integer", "minimum": 0, "maximum": 4},
+        "recent_changes": {"type": "integer", "minimum": 0, "maximum": 4},
+        "structural_completeness": {"type": "integer", "minimum": 0, "maximum": 4},
+        "uncertainty_handling": {"type": "integer", "minimum": 0, "maximum": 4}
+      },
+      "additionalProperties": false
+    },
+    "evidence": {"type": "array", "minItems": 1, "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

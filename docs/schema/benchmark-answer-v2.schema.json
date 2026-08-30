@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/benchmark-answer-v2.schema.json",
+  "title": "RepoCue repository-state benchmark answer version 2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "project_purpose",
+    "git",
+    "primary_entry_points",
+    "major_components",
+    "important_documentation",
+    "recent_relevant_changes",
+    "project_symbols",
+    "uncertainties"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "repocue/benchmark-answer-2"},
+    "project_purpose": {"type": "string"},
+    "git": {
+      "type": "object",
+      "required": ["branch", "head", "dirty", "tracked_changes", "untracked"],
+      "properties": {
+        "branch": {"type": ["string", "null"]},
+        "head": {"type": ["string", "null"]},
+        "dirty": {"type": "boolean"},
+        "tracked_changes": {"type": "array", "items": {"type": "string"}},
+        "untracked": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "primary_entry_points": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "responsibility"],
+        "properties": {
+          "path": {"type": "string"},
+          "responsibility": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "major_components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "responsibilities", "paths"],
+        "properties": {
+          "name": {"type": "string"},
+          "responsibilities": {"type": "array", "items": {"type": "string"}},
+          "paths": {"type": "array", "items": {"type": "string"}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "important_documentation": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["path", "purpose"],
+        "properties": {
+          "path": {"type": "string"},
+          "purpose": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "recent_relevant_changes": {"type": "array", "items": {"type": "string"}},
+    "project_symbols": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "signature", "owner", "relevance"],
+        "properties": {
+          "name": {"type": "string"},
+          "signature": {"type": "string"},
+          "owner": {"type": "string"},
+          "relevance": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "uncertainties": {"type": "array", "items": {"type": "string"}}
+  },
+  "additionalProperties": false
+}

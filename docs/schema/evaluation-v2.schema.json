@@ -1,0 +1,180 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/evaluation-v2.schema.json",
+  "title": "RepoCue real-agent evaluation report version 2",
+  "type": "object",
+  "required": ["schema_version", "kind", "generated_at", "benchmark_version", "output_schema_version", "repocue_snapshot", "repository", "baseline", "update", "cue", "direct", "assisted", "comparison", "reuse", "limitations"],
+  "properties": {
+    "schema_version": {"const": "repocue/evaluation-2"},
+    "kind": {"const": "core-evaluation"},
+    "generated_at": {"type": "string", "format": "date-time"},
+    "benchmark_version": {"const": "repository-state-v1"},
+    "output_schema_version": {"const": "repocue/benchmark-answer-1"},
+    "repocue_snapshot": {"type": "string", "minLength": 1},
+    "repository": {"$ref": "#/$defs/repository"},
+    "baseline": {"$ref": "#/$defs/operation"},
+    "update": {"$ref": "#/$defs/operation"},
+    "cue": {"$ref": "#/$defs/cue"},
+    "direct": {"$ref": "#/$defs/arm"},
+    "assisted": {"$ref": "#/$defs/arm"},
+    "comparison": {"$ref": "#/$defs/comparison"},
+    "reuse": {
+      "type": "array",
+      "minItems": 5,
+      "maxItems": 5,
+      "prefixItems": [
+        {"$ref": "#/$defs/reuse", "properties": {"consumers": {"const": 1}}},
+        {"$ref": "#/$defs/reuse", "properties": {"consumers": {"const": 2}}},
+        {"$ref": "#/$defs/reuse", "properties": {"consumers": {"const": 3}}},
+        {"$ref": "#/$defs/reuse", "properties": {"consumers": {"const": 5}}},
+        {"$ref": "#/$defs/reuse", "properties": {"consumers": {"const": 10}}}
+      ],
+      "items": false
+    },
+    "limitations": {"type": "array", "items": {"type": "string"}}
+  },
+  "$defs": {
+    "measurement": {
+      "type": "object",
+      "required": ["status", "unit"],
+      "properties": {
+        "status": {"enum": ["observed", "derived", "estimated", "not_observed"]},
+        "value": {"type": "number"},
+        "unit": {"type": "string", "minLength": 1}
+      },
+      "allOf": [{"if": {"properties": {"status": {"const": "not_observed"}}}, "then": {"not": {"required": ["value"]}}, "else": {"required": ["value"]}}],
+      "additionalProperties": false
+    },
+    "repository": {
+      "type": "object",
+      "required": ["id", "name", "root", "branch", "head", "dirty", "tracked_files", "present_files", "tracked_bytes"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1},
+        "root": {"type": "string", "minLength": 1},
+        "branch": {"type": ["string", "null"]},
+        "head": {"type": ["string", "null"]},
+        "dirty": {"type": "boolean"},
+        "tracked_files": {"type": "integer", "minimum": 0},
+        "present_files": {"type": "integer", "minimum": 0},
+        "tracked_bytes": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "operation": {
+      "type": "object",
+      "required": ["kind", "wall_duration_ms", "scan_duration_ms", "files_scanned", "bytes_scanned", "git_commands", "changed", "database_size_bytes", "materialized_file_rows"],
+      "properties": {
+        "kind": {"enum": ["full", "no-op"]},
+        "wall_duration_ms": {"type": "number", "minimum": 0},
+        "scan_duration_ms": {"type": "number", "minimum": 0},
+        "files_scanned": {"type": "integer", "minimum": 0},
+        "bytes_scanned": {"type": "integer", "minimum": 0},
+        "git_commands": {"type": "integer", "minimum": 0},
+        "changed": {"type": "boolean"},
+        "database_size_bytes": {"type": "integer", "minimum": 0},
+        "materialized_file_rows": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "cue": {
+      "type": "object",
+      "required": ["view", "wall_duration_ms", "output_bytes", "estimated_tokens", "max_tokens"],
+      "properties": {
+        "view": {"const": "overview"},
+        "wall_duration_ms": {"type": "number", "minimum": 0},
+        "output_bytes": {"type": "integer", "minimum": 1},
+        "estimated_tokens": {"type": "integer", "minimum": 1},
+        "max_tokens": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "metadata": {
+      "type": "object",
+      "properties": {
+        "adapter": {"type": "string"},
+        "adapter_version": {"type": "string"},
+        "codex_version": {"type": "string"},
+        "model": {"type": "string"},
+        "reasoning_effort": {"type": "string"},
+        "sandbox": {"type": "string"},
+        "benchmark_version": {"type": "string"},
+        "output_schema_version": {"type": "string"},
+        "repository_head": {"type": "string"},
+        "repocue_snapshot": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "arm": {
+      "type": "object",
+      "required": ["status", "metadata", "runner_wall_duration", "input_tokens", "cached_input_tokens", "output_tokens", "reasoning_output_tokens", "total_tokens", "execution_duration", "command_executions", "repository_files_read", "repository_bytes_read", "git_calls", "filesystem_search_calls", "tool_calls", "task_ready_latency", "fallback_repository_commands", "fallback_repository_files_read", "fallback_repository_bytes_read", "context_correctness", "context_completeness", "tokenizer_counts", "commands", "findings"],
+      "properties": {
+        "status": {"enum": ["observed", "not_observed"]},
+        "metadata": {"$ref": "#/$defs/metadata"},
+        "runner_wall_duration": {"$ref": "#/$defs/measurement"},
+        "input_tokens": {"$ref": "#/$defs/measurement"},
+        "cached_input_tokens": {"$ref": "#/$defs/measurement"},
+        "output_tokens": {"$ref": "#/$defs/measurement"},
+        "reasoning_output_tokens": {"$ref": "#/$defs/measurement"},
+        "total_tokens": {"$ref": "#/$defs/measurement"},
+        "execution_duration": {"$ref": "#/$defs/measurement"},
+        "command_executions": {"$ref": "#/$defs/measurement"},
+        "repository_files_read": {"$ref": "#/$defs/measurement"},
+        "repository_bytes_read": {"$ref": "#/$defs/measurement"},
+        "git_calls": {"$ref": "#/$defs/measurement"},
+        "filesystem_search_calls": {"$ref": "#/$defs/measurement"},
+        "tool_calls": {"$ref": "#/$defs/measurement"},
+        "task_ready_latency": {"$ref": "#/$defs/measurement"},
+        "fallback_repository_commands": {"$ref": "#/$defs/measurement"},
+        "fallback_repository_files_read": {"$ref": "#/$defs/measurement"},
+        "fallback_repository_bytes_read": {"$ref": "#/$defs/measurement"},
+        "context_correctness": {"$ref": "#/$defs/measurement"},
+        "context_completeness": {"$ref": "#/$defs/measurement"},
+        "tokenizer_counts": {"type": "array"},
+        "commands": {"type": "array"},
+        "final_response": {"type": "object"},
+        "answer": {"type": "object"},
+        "deterministic_score": {"type": "object"},
+        "findings": {"type": "array"}
+      },
+      "additionalProperties": false
+    },
+    "comparison": {
+      "type": "object",
+      "required": ["input_token_reduction", "cached_input_token_change", "total_token_reduction", "repository_file_read_reduction", "repository_byte_read_reduction", "tool_call_reduction", "execution_duration_reduction"],
+      "properties": {
+        "input_token_reduction": {"$ref": "#/$defs/measurement"},
+        "cached_input_token_change": {"$ref": "#/$defs/measurement"},
+        "total_token_reduction": {"$ref": "#/$defs/measurement"},
+        "repository_file_read_reduction": {"$ref": "#/$defs/measurement"},
+        "repository_byte_read_reduction": {"$ref": "#/$defs/measurement"},
+        "tool_call_reduction": {"$ref": "#/$defs/measurement"},
+        "execution_duration_reduction": {"$ref": "#/$defs/measurement"}
+      },
+      "additionalProperties": false
+    },
+    "reuse": {
+      "type": "object",
+      "required": ["consumers", "repocue_maintenance_duration_ms", "repocue_maintenance_bytes_scanned", "cue_output_bytes", "estimated_cue_tokens", "direct_total_tokens", "assisted_total_tokens", "direct_repository_bytes_read", "assisted_repository_bytes_read", "per_agent_cue_bytes", "per_agent_estimated_cue_tokens", "per_agent_cue_duration_ms", "per_agent_fallback_bytes_read", "direct_execution_duration", "assisted_total_execution_duration"],
+      "properties": {
+        "consumers": {"type": "integer"},
+        "repocue_maintenance_duration_ms": {"type": "number", "minimum": 0},
+        "repocue_maintenance_bytes_scanned": {"type": "integer", "minimum": 0},
+        "cue_output_bytes": {"type": "integer", "minimum": 0},
+        "estimated_cue_tokens": {"type": "integer", "minimum": 0},
+        "direct_total_tokens": {"$ref": "#/$defs/measurement"},
+        "assisted_total_tokens": {"$ref": "#/$defs/measurement"},
+        "direct_repository_bytes_read": {"$ref": "#/$defs/measurement"},
+        "assisted_repository_bytes_read": {"$ref": "#/$defs/measurement"},
+        "per_agent_cue_bytes": {"type": "integer", "minimum": 0},
+        "per_agent_estimated_cue_tokens": {"type": "integer", "minimum": 0},
+        "per_agent_cue_duration_ms": {"type": "number", "minimum": 0},
+        "per_agent_fallback_bytes_read": {"$ref": "#/$defs/measurement"},
+        "direct_execution_duration": {"$ref": "#/$defs/measurement"},
+        "assisted_total_execution_duration": {"$ref": "#/$defs/measurement"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}

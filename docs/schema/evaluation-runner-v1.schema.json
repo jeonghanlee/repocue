@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/evaluation-runner-v1.schema.json",
+  "title": "RepoCue evaluation runner observation version 1",
+  "type": "object",
+  "required": ["schema_version", "arm", "metrics"],
+  "properties": {
+    "schema_version": {"const": "repocue/evaluation-runner-1"},
+    "arm": {"enum": ["direct", "assisted"]},
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "agent_tokens": {"type": "integer", "minimum": 0},
+        "repository_files_read": {"type": "integer", "minimum": 0},
+        "repository_bytes_read": {"type": "integer", "minimum": 0},
+        "git_calls": {"type": "integer", "minimum": 0},
+        "search_calls": {"type": "integer", "minimum": 0},
+        "tool_calls": {"type": "integer", "minimum": 0},
+        "task_ready_latency_ms": {"type": "number", "minimum": 0},
+        "fallback_repository_files_read": {"type": "integer", "minimum": 0},
+        "fallback_repository_bytes_read": {"type": "integer", "minimum": 0},
+        "context_correctness": {"type": "number", "minimum": 0, "maximum": 1},
+        "context_completeness": {"type": "number", "minimum": 0, "maximum": 1}
+      },
+      "additionalProperties": false
+    },
+    "tokenizer_counts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tokenizer", "tokens"],
+        "properties": {
+          "tokenizer": {"type": "string", "minLength": 1},
+          "tokens": {"type": "integer", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "severity", "message"],
+        "properties": {
+          "category": {"type": "string", "minLength": 1},
+          "severity": {"type": "string", "minLength": 1},
+          "message": {"type": "string", "minLength": 1},
+          "evidence": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}

@@ -1,0 +1,123 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/cue-v1.schema.json",
+  "title": "RepoCue cue version 1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "repository",
+    "epoch",
+    "snapshot",
+    "basis",
+    "freshness",
+    "budget",
+    "content",
+    "warnings",
+    "more"
+  ],
+  "properties": {
+    "schema_version": {"const": "repocue/1"},
+    "kind": {"enum": ["overview", "delta"]},
+    "repository": {
+      "type": "object",
+      "required": ["id", "name", "branch", "head", "dirty"],
+      "properties": {
+        "id": {"type": "string", "minLength": 1},
+        "name": {"type": "string", "minLength": 1},
+        "branch": {"type": ["string", "null"]},
+        "head": {"type": ["string", "null"]},
+        "dirty": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "epoch": {"type": "string", "minLength": 1},
+    "snapshot": {"type": "string", "minLength": 1},
+    "basis": {
+      "type": "object",
+      "required": ["status_digest", "repository_digest", "observed_at"],
+      "properties": {
+        "status_digest": {"type": "string", "minLength": 1},
+        "repository_digest": {"type": "string", "minLength": 1},
+        "observed_at": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false
+    },
+    "freshness": {
+      "enum": ["current", "dirty-but-indexed", "refresh-needed", "unknown"]
+    },
+    "budget": {
+      "type": "object",
+      "required": ["max_tokens", "estimated_tokens"],
+      "properties": {
+        "max_tokens": {"type": "integer", "minimum": 1},
+        "estimated_tokens": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "content": {"type": "object"},
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["code"],
+        "properties": {
+          "code": {"type": "string", "minLength": 1},
+          "count": {"type": "integer", "minimum": 1}
+        },
+        "additionalProperties": false
+      }
+    },
+    "more": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["view"],
+        "properties": {
+          "view": {"enum": ["overview", "delta"]},
+          "max_tokens": {"type": "integer", "minimum": 1}
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "allOf": [
+    {
+      "if": {"properties": {"kind": {"const": "overview"}}},
+      "then": {
+        "properties": {
+          "content": {
+            "required": ["tracked_files", "present_files", "bytes"],
+            "properties": {
+              "tracked_files": {"type": "integer", "minimum": 0},
+              "present_files": {"type": "integer", "minimum": 0},
+              "bytes": {"type": "integer", "minimum": 0},
+              "documents": {"type": "array", "items": {"type": "string"}},
+              "languages": {"type": "array"},
+              "top_level": {"type": "array", "items": {"type": "string"}}
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    },
+    {
+      "if": {"properties": {"kind": {"const": "delta"}}},
+      "then": {
+        "properties": {
+          "content": {
+            "required": ["from_snapshot", "to_snapshot", "change_count", "changes"],
+            "properties": {
+              "from_snapshot": {"type": "string", "minLength": 1},
+              "to_snapshot": {"type": "string", "minLength": 1},
+              "change_count": {"type": "integer", "minimum": 0},
+              "changes": {"type": "array"}
+            },
+            "additionalProperties": false
+          }
+        }
+      }
+    }
+  ],
+  "additionalProperties": false
+}

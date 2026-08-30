@@ -1,0 +1,50 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/cue-v2.schema.json",
+  "title": "RepoCue experimental cue version 2",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "kind",
+    "repository",
+    "snapshot",
+    "freshness",
+    "observed_at",
+    "budget",
+    "content",
+    "warnings"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "repocue/cue-2"},
+    "kind": {
+      "type": "string",
+      "enum": ["placebo", "ranked", "structural-oracle", "provenance", "delta"]
+    },
+    "repository": {
+      "type": "object",
+      "required": ["branch", "head", "dirty"],
+      "properties": {
+        "branch": {"type": ["string", "null"]},
+        "head": {"type": ["string", "null"]},
+        "dirty": {"type": "boolean"}
+      },
+      "additionalProperties": false
+    },
+    "epoch": {"type": "string"},
+    "snapshot": {"type": "string", "minLength": 1},
+    "freshness": {"type": "string", "minLength": 1},
+    "observed_at": {"type": "string", "format": "date-time"},
+    "budget": {
+      "type": "object",
+      "required": ["max_tokens", "estimated_tokens"],
+      "properties": {
+        "max_tokens": {"type": "integer", "minimum": 1},
+        "estimated_tokens": {"type": "integer", "minimum": 1}
+      },
+      "additionalProperties": false
+    },
+    "content": {"type": "object"},
+    "warnings": {"type": "array", "items": {"type": "object"}}
+  },
+  "additionalProperties": false
+}

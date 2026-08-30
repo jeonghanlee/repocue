@@ -1,0 +1,94 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/evaluation-runner-v2.schema.json",
+  "title": "RepoCue evaluation runner observation version 2",
+  "type": "object",
+  "required": ["schema_version", "arm", "metadata", "metrics"],
+  "properties": {
+    "schema_version": {"const": "repocue/evaluation-runner-2"},
+    "arm": {"enum": ["direct", "assisted"]},
+    "metadata": {"$ref": "#/$defs/metadata"},
+    "metrics": {
+      "type": "object",
+      "properties": {
+        "input_tokens": {"type": "integer", "minimum": 0},
+        "cached_input_tokens": {"type": "integer", "minimum": 0},
+        "output_tokens": {"type": "integer", "minimum": 0},
+        "reasoning_output_tokens": {"type": "integer", "minimum": 0},
+        "total_tokens": {"type": "integer", "minimum": 0},
+        "execution_duration_ms": {"type": "number", "minimum": 0},
+        "command_executions": {"type": "integer", "minimum": 0},
+        "repository_files_read": {"type": "integer", "minimum": 0},
+        "repository_bytes_read": {"type": "integer", "minimum": 0},
+        "git_calls": {"type": "integer", "minimum": 0},
+        "filesystem_search_calls": {"type": "integer", "minimum": 0},
+        "tool_calls": {"type": "integer", "minimum": 0},
+        "task_ready_latency_ms": {"type": "number", "minimum": 0},
+        "fallback_repository_commands": {"type": "integer", "minimum": 0},
+        "fallback_repository_files_read": {"type": "integer", "minimum": 0},
+        "fallback_repository_bytes_read": {"type": "integer", "minimum": 0},
+        "context_correctness": {"type": "number", "minimum": 0, "maximum": 1},
+        "context_completeness": {"type": "number", "minimum": 0, "maximum": 1},
+        "statuses": {
+          "type": "object",
+          "additionalProperties": {"enum": ["observed", "derived", "estimated"]}
+        }
+      },
+      "additionalProperties": false
+    },
+    "tokenizer_counts": {"type": "array", "items": {"$ref": "#/$defs/tokenizer_count"}},
+    "commands": {"type": "array", "items": {"$ref": "#/$defs/command"}},
+    "final_response": {"type": "object"},
+    "findings": {"type": "array", "items": {"$ref": "#/$defs/finding"}}
+  },
+  "$defs": {
+    "metadata": {
+      "type": "object",
+      "required": ["adapter", "adapter_version"],
+      "properties": {
+        "adapter": {"type": "string", "minLength": 1},
+        "adapter_version": {"type": "string", "minLength": 1},
+        "codex_version": {"type": "string"},
+        "model": {"type": "string"},
+        "reasoning_effort": {"type": "string"},
+        "sandbox": {"type": "string"},
+        "benchmark_version": {"type": "string"},
+        "output_schema_version": {"type": "string"},
+        "repository_head": {"type": "string"},
+        "repocue_snapshot": {"type": "string"}
+      },
+      "additionalProperties": false
+    },
+    "tokenizer_count": {
+      "type": "object",
+      "required": ["tokenizer", "tokens"],
+      "properties": {
+        "tokenizer": {"type": "string", "minLength": 1},
+        "tokens": {"type": "integer", "minimum": 0}
+      },
+      "additionalProperties": false
+    },
+    "command": {
+      "type": "object",
+      "required": ["command", "classification", "files_read"],
+      "properties": {
+        "command": {"type": "string", "minLength": 1},
+        "classification": {"type": "string", "minLength": 1},
+        "files_read": {"type": "array", "items": {"type": "string"}}
+      },
+      "additionalProperties": false
+    },
+    "finding": {
+      "type": "object",
+      "required": ["category", "severity", "message"],
+      "properties": {
+        "category": {"type": "string", "minLength": 1},
+        "severity": {"type": "string", "minLength": 1},
+        "message": {"type": "string", "minLength": 1},
+        "evidence": {"type": "string"}
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": false
+}
