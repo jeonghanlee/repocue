@@ -3,6 +3,13 @@
 RepoCue maintains deterministic Git and filesystem context in a local SQLite
 cache and returns compact, freshness-aware JSON cues for coding agents.
 
+- [Quick start](docs/QUICK_START.md)
+- [Documentation index](docs/README.md)
+- [Installation](docs/INSTALLATION.md)
+- [CLI reference](docs/CLI.md)
+- [Agent skill](skills/repocue/SKILL.md)
+- [Architecture](docs/ARCHITECTURE.md)
+
 ## Scope
 
 This repository implements the accepted first vertical slice, Core Evaluation
@@ -12,14 +19,53 @@ model-neutral evaluation, Codex JSONL observation, and benchmark scoring.
 **Out of scope:** MCP, Tree-sitter, embeddings, LLM integration, filesystem
 watching, checkpoints, pruning, and retention-policy enforcement.
 
-## Build
+## Prerequisites
+
+RepoCue requires Go 1.24 or newer. GNU Make provides the standard local build
+and installation workflows. mdBook is optional unless the documentation site
+is built.
+
+## Makefile Workflow
+
+Verify the repository and build both local binaries:
 
 ```bash
-go build -o repocue ./cmd/repocue
-go build -o repocue-codex-runner ./cmd/repocue-codex-runner
+make check
+make build
 ```
 
-## CLI
+Preview, apply, and verify a user installation under `$HOME/.local/bin`:
+
+```bash
+make install.dry-run
+make install.apply
+make install.check
+```
+
+If `install.check` reports a PATH mismatch, follow the activation steps in
+[docs/INSTALLATION.md](docs/INSTALLATION.md).
+
+Build the local documentation site under `docs/book/`:
+
+```bash
+make docs.build
+```
+
+See [docs/INSTALLATION.md](docs/INSTALLATION.md) for cross-builds, local
+overrides, and removal.
+
+## Direct CLI Workflow
+
+Build the primary CLI without Make:
+
+```bash
+CGO_ENABLED=0 go build -trimpath -o repocue ./cmd/repocue
+```
+
+This keeps the direct Go output separate from the Make-managed `build/`
+directory.
+
+Initialize and inspect a repository:
 
 ```bash
 ./repocue init .

@@ -1,0 +1,14 @@
+[book]
+authors = ["RepoCue Contributors"]
+language = "en"
+src = "."
+title = "RepoCue"
+
+[build]
+build-dir = "book"
+create-missing = false
+
+[output.html]
+site-url = "/repocue/"
+git-repository-url = "https://github.com/jeonghanlee/repocue"
+edit-url-template = "https://github.com/jeonghanlee/repocue/edit/master/docs/{path}"

@@ -1,0 +1,62 @@
+---
+name: Deploy mdBook to GitHub Pages
+
+"on":
+  push:
+    branches:
+      - master
+    paths:
+      - "docs/**"
+      - "Makefile"
+      - "configure/**"
+      - "tools/generated-path.bash"
+      - ".github/workflows/pages.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    name: Build the mdBook site
+    runs-on: ubuntu-latest
+    container:
+      image: jeonghanlee/mdbook
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v5
+
+      - name: Show mdBook version
+        run: mdbook --version
+
+      - name: Build the book
+        run: mdbook build docs
+
+      - name: Guard against build side effects
+        run: test -z "$(git status --porcelain -- docs)"
+
+      - name: Setup Pages
+        uses: actions/configure-pages@v6
+
+      - name: Upload Pages artifact
+        uses: actions/upload-pages-artifact@v5
+        with:
+          path: docs/book
+
+  deploy:
+    name: Deploy to GitHub Pages
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v5
