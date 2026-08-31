@@ -1,0 +1,7 @@
+APPNAME := repocue
+APP_VERSION ?= development
+MODULE_PATH := github.com/jeonghanlee/repocue
+SOURCE_URL := https://github.com/jeonghanlee/repocue
+
+-include $(TOP)/RELEASE.local
+-include $(TOP)/configure/RELEASE.local

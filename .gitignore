@@ -1,4 +1,10 @@
 /repocue
+/build/
 /coverage.out
 /.repocue/
+/docs/book/
+/docs/.repocue-book-generated
+/configure/*.local
+/CONFIG_SITE.local
+/RELEASE.local
 /work/

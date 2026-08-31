@@ -1,0 +1,29 @@
+BINARIES := repocue repocue-codex-runner
+INSTALL_BINARY := repocue
+
+CMD_repocue := ./cmd/repocue
+CMD_repocue-codex-runner := ./cmd/repocue-codex-runner
+
+BUILD_BIN_DIR := $(BUILD_ROOT)/bin
+CROSS_BUILD_ROOT := $(BUILD_ROOT)/cross
+INSTALL_BIN_DIR := $(INSTALL_LOCATION)/bin
+INSTALL_DESTINATION := $(INSTALL_BIN_DIR)/$(INSTALL_BINARY)
+INSTALL_TOOL := $(TOP)/tools/install-repocue.bash
+GO_VERSION_TOOL := $(TOP)/tools/check-go-version.bash
+GENERATED_PATH_TOOL := $(TOP)/tools/generated-path.bash
+
+DOCS_ROOT := $(TOP)/docs
+DOCS_OUTPUT := $(DOCS_ROOT)/book
+
+CROSS_TARGETS := linux-amd64 windows-amd64
+GOOS_linux-amd64 := linux
+GOARCH_linux-amd64 := amd64
+SUFFIX_linux-amd64 :=
+GOOS_windows-amd64 := windows
+GOARCH_windows-amd64 := amd64
+SUFFIX_windows-amd64 := .exe
+
+VARS_EXCLUDES += CMD_% GOOS_% GOARCH_% SUFFIX_% INSTALL_TOOL
+VARS_EXCLUDES += GO_VERSION_TOOL GENERATED_PATH_TOOL
+VARS_EXCLUDES += BUILD_BIN_DIR CROSS_BUILD_ROOT INSTALL_BIN_DIR
+VARS_EXCLUDES += INSTALL_DESTINATION DOCS_ROOT DOCS_OUTPUT

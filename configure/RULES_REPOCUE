@@ -1,0 +1,198 @@
+.DEFAULT_GOAL := help
+
+.PHONY: help help.detail check-tools check-doc-tools
+.PHONY: fmt.check test test.race vet check build clean
+.PHONY: docs.build docs.clean
+.PHONY: install install.check install.dry-run install.apply
+.PHONY: uninstall uninstall.check uninstall.dry-run uninstall.apply
+
+## Show the primary build, install, and verification workflows
+help:
+	$(QUIET) printf "%s\n" "Usage: make <target> [VAR=value]"
+	$(QUIET) printf "\n%s\n" "Workflows"
+	$(QUIET) printf "  %-18s   %s\n" "Stage" "Command"
+	$(QUIET) printf "  %-18s   %s\n" "------------------" "--------------------------------"
+	$(QUIET) printf "  %-18s   %s\n" "Verify" "make check"
+	$(QUIET) printf "  %-18s   %s\n" "Build" "make build"
+	$(QUIET) printf "  %-18s   %s\n" "Preview install" "make install.dry-run"
+	$(QUIET) printf "  %-18s   %s\n" "Install" "make install.apply"
+	$(QUIET) printf "  %-18s   %s\n" "Build docs" "make docs.build"
+	$(QUIET) printf "\n%s\n" "Details: make help.detail"
+
+## Show every supported Make target
+help.detail:
+	$(QUIET) printf "%s\n" "Build and Verification Targets"
+	$(QUIET) printf "  %-30s   %s\n" "Target" "Description"
+	$(QUIET) printf "  %-30s   %s\n" "------------------------------" "-----------------------------------------------"
+	$(QUIET) printf "  %-30s   %s\n" "check-tools" "Verify local build prerequisites."
+	$(QUIET) printf "  %-30s   %s\n" "fmt.check" "Check Go formatting without editing files."
+	$(QUIET) printf "  %-30s   %s\n" "test" "Run the Go test suite."
+	$(QUIET) printf "  %-30s   %s\n" "test.race" "Run the Go race-enabled test suite."
+	$(QUIET) printf "  %-30s   %s\n" "vet" "Run Go static analysis."
+	$(QUIET) printf "  %-30s   %s\n" "check" "Run formatting, tests, and static analysis."
+	$(QUIET) printf "  %-30s   %s\n" "build" "Build all local binaries."
+	$(QUIET) printf "  %-30s   %s\n" "build.repocue" "Build the RepoCue CLI."
+	$(QUIET) printf "  %-30s   %s\n" "build.repocue-codex-runner" "Build the Codex evaluation adapter."
+	$(QUIET) printf "  %-30s   %s\n" "build.linux-amd64" "Cross-build the Linux amd64 RepoCue CLI."
+	$(QUIET) printf "  %-30s   %s\n" "build.windows-amd64" "Cross-build the Windows amd64 RepoCue CLI."
+	$(QUIET) printf "  %-30s   %s\n" "clean" "Remove generated build artifacts."
+	$(QUIET) printf "\n%s\n" "Installation Targets"
+	$(QUIET) printf "  %-30s   %s\n" "install.check" "Verify the installed command and active PATH."
+	$(QUIET) printf "  %-30s   %s\n" "install.dry-run" "Preview installation without changing files."
+	$(QUIET) printf "  %-30s   %s\n" "install.apply" "Build and install RepoCue for the current user."
+	$(QUIET) printf "  %-30s   %s\n" "uninstall.check" "Verify the managed executable is absent."
+	$(QUIET) printf "  %-30s   %s\n" "uninstall.dry-run" "Preview removal without changing files."
+	$(QUIET) printf "  %-30s   %s\n" "uninstall.apply" "Remove the managed RepoCue executable."
+	$(QUIET) printf "  %-30s   %s\n" "install" "Alias for install.apply."
+	$(QUIET) printf "  %-30s   %s\n" "uninstall" "Alias for uninstall.apply."
+	$(QUIET) printf "\n%s\n" "Documentation and Inspection Targets"
+	$(QUIET) printf "  %-30s   %s\n" "check-doc-tools" "Verify the optional mdBook prerequisite."
+	$(QUIET) printf "  %-30s   %s\n" "docs.build" "Build the local mdBook site."
+	$(QUIET) printf "  %-30s   %s\n" "docs.clean" "Remove the generated mdBook site."
+	$(QUIET) printf "  %-30s   %s\n" "help" "Show the primary workflows."
+	$(QUIET) printf "  %-30s   %s\n" "help.detail" "Show the supported target reference."
+	$(QUIET) printf "  %-30s   %s\n" "vars [FILTER=<prefix>]" "Show active Make configuration."
+	$(QUIET) printf "  %-30s   %s\n" "env" "Alias for vars."
+	$(QUIET) printf "  %-30s   %s\n" "PRINT.<name>" "Show one variable and its origin."
+	$(QUIET) printf "  %-30s   %s\n" "print-<name>" "Show one variable value."
+
+## Verify local build prerequisites
+check-tools:
+	$(QUIET) missing=0; gofmt_path="$$(command -v "$(GOFMT)" 2>/dev/null || true)"; \
+	realpath_path="$$(command -v "$(REALPATH)" 2>/dev/null || true)"; \
+	realpath_probe="$$($$realpath_path -m -- "$(TOP)" 2>/dev/null || true)"; \
+	if [ -z "$$gofmt_path" ] || [ ! -x "$$gofmt_path" ]; then \
+	    printf "%s\n" "error: $(GOFMT) not found in PATH"; \
+	    printf "%s\n" "gofmt is included with the Go distribution"; \
+	    missing=1; \
+	fi; \
+	if [ -z "$$realpath_path" ] || [ ! -x "$$realpath_path" ] || [ -z "$$realpath_probe" ]; then \
+	    printf "%s\n" "error: $(REALPATH) is unavailable or failed its path probe"; \
+	    printf "%s\n" "install on Debian with: apt install coreutils"; \
+	    missing=1; \
+	fi; \
+	if [ "$$missing" -ne 0 ]; then \
+	    printf "%s\n" "FAIL: required build tools are unavailable"; \
+	    exit 1; \
+	fi
+	$(QUIET) GO_COMMAND="$(GO)" "$(GO_VERSION_TOOL)" --module-file "$(TOP)/go.mod"
+	$(QUIET) printf "%s\n" "PASS: required build tools are available"
+
+## Verify the optional mdBook prerequisite
+check-doc-tools:
+	$(QUIET) mdbook_path="$$(command -v "$(MDBOOK)" 2>/dev/null || true)"; \
+	if [ -z "$$mdbook_path" ] || [ ! -x "$$mdbook_path" ]; then \
+	    printf "%s\n" "error: $(MDBOOK) not found in PATH"; \
+	    printf "%s\n" "install mdBook from https://rust-lang.github.io/mdBook/guide/installation.html"; \
+	    exit 1; \
+	fi
+	$(QUIET) printf "%s\n" "PASS: mdBook is available"
+
+## Check Go formatting without editing files
+fmt.check: check-tools
+	$(QUIET) files="$$(find cmd internal -type f -name '*.go' -exec "$(GOFMT)" -l {} +)"; \
+	if [ -n "$$files" ]; then \
+	    printf "%s\n" "FAIL: gofmt required for:"; \
+	    printf "%s\n" "$$files"; \
+	    exit 1; \
+	fi
+	$(QUIET) printf "%s\n" "PASS: Go sources are formatted"
+
+## Run the Go test suite
+test: check-tools
+	$(QUIET) "$(GO)" test ./...
+
+## Run the Go race-enabled test suite
+test.race: check-tools
+	$(QUIET) "$(GO)" test -race ./...
+
+## Run Go static analysis
+vet: check-tools
+	$(QUIET) "$(GO)" vet ./...
+
+## Run formatting, tests, and static analysis
+check: fmt.check test vet
+	$(QUIET) printf "%s\n" "PASS: repository checks completed"
+
+define build_binary_target
+.PHONY: build.$(1)
+build.$(1): check-tools
+	$$(QUIET) REALPATH_COMMAND="$$(REALPATH)" "$$(GENERATED_PATH_TOOL)" prepare --kind build \
+	    --project-root "$$(TOP)" --target "$$(BUILD_ROOT)"
+	$$(QUIET) mkdir -p "$$(BUILD_BIN_DIR)"
+	$$(QUIET) CGO_ENABLED="$$(CGO_ENABLED)" "$$(GO)" build -trimpath -o "$$(BUILD_BIN_DIR)/$(1)" "$$(CMD_$(1))"
+endef
+VARS_EXCLUDES += build_binary_target
+$(foreach binary,$(BINARIES),$(eval $(call build_binary_target,$(binary))))
+
+## Build all local binaries
+build: $(addprefix build.,$(BINARIES))
+	$(QUIET) printf "%s\n" "Built binaries in $(BUILD_BIN_DIR)"
+
+define build_platform_target
+.PHONY: build.$(1)
+build.$(1): check-tools
+	$$(QUIET) REALPATH_COMMAND="$$(REALPATH)" "$$(GENERATED_PATH_TOOL)" prepare --kind build \
+	    --project-root "$$(TOP)" --target "$$(BUILD_ROOT)"
+	$$(QUIET) mkdir -p "$$(CROSS_BUILD_ROOT)/$(1)"
+	$$(QUIET) CGO_ENABLED=0 GOOS="$$(GOOS_$(1))" GOARCH="$$(GOARCH_$(1))" "$$(GO)" build -trimpath -o "$$(CROSS_BUILD_ROOT)/$(1)/$$(INSTALL_BINARY)$$(SUFFIX_$(1))" "$$(CMD_repocue)"
+endef
+VARS_EXCLUDES += build_platform_target
+$(foreach platform,$(CROSS_TARGETS),$(eval $(call build_platform_target,$(platform))))
+
+## Remove generated build artifacts
+clean:
+	$(QUIET) REALPATH_COMMAND="$(REALPATH)" "$(GENERATED_PATH_TOOL)" clean --kind build \
+	    --project-root "$(TOP)" --target "$(BUILD_ROOT)"
+
+## Build the local mdBook site
+docs.build: check-doc-tools
+	$(QUIET) REALPATH_COMMAND="$(REALPATH)" "$(GENERATED_PATH_TOOL)" prepare --kind docs \
+	    --project-root "$(TOP)" --target "$(DOCS_OUTPUT)"
+	$(QUIET) "$(MDBOOK)" build "$(DOCS_ROOT)"
+
+## Remove the generated mdBook site
+docs.clean:
+	$(QUIET) REALPATH_COMMAND="$(REALPATH)" "$(GENERATED_PATH_TOOL)" clean --kind docs \
+	    --project-root "$(TOP)" --target "$(DOCS_OUTPUT)"
+
+## Verify the installed command and active PATH
+install.check:
+	$(QUIET) INSTALL_COMMAND="$(INSTALL)" "$(INSTALL_TOOL)" check \
+	    --destination "$(INSTALL_DESTINATION)" --command "$(INSTALL_BINARY)"
+
+## Preview installation without changing files
+install.dry-run:
+	$(QUIET) APPLY_COMMAND="make install.apply INSTALL_LOCATION=$(INSTALL_LOCATION)" \
+	    VERIFY_COMMAND="make install.check INSTALL_LOCATION=$(INSTALL_LOCATION)" \
+	    INSTALL_COMMAND="$(INSTALL)" "$(INSTALL_TOOL)" install-dry-run \
+	    --source "$(BUILD_BIN_DIR)/$(INSTALL_BINARY)" \
+	    --destination "$(INSTALL_DESTINATION)" --command "$(INSTALL_BINARY)"
+
+## Build and install RepoCue for the current user
+install.apply: build.repocue
+	$(QUIET) VERIFY_COMMAND="make install.check INSTALL_LOCATION=$(INSTALL_LOCATION)" \
+	    INSTALL_COMMAND="$(INSTALL)" "$(INSTALL_TOOL)" install \
+	    --source "$(BUILD_BIN_DIR)/$(INSTALL_BINARY)" \
+	    --destination "$(INSTALL_DESTINATION)" --command "$(INSTALL_BINARY)"
+
+install: install.apply
+
+## Verify the managed executable is absent
+uninstall.check:
+	$(QUIET) "$(INSTALL_TOOL)" check-absent \
+	    --destination "$(INSTALL_DESTINATION)" --command "$(INSTALL_BINARY)"
+
+## Preview removal without changing files
+uninstall.dry-run:
+	$(QUIET) APPLY_COMMAND="make uninstall.apply INSTALL_LOCATION=$(INSTALL_LOCATION)" \
+	    VERIFY_COMMAND="make uninstall.check INSTALL_LOCATION=$(INSTALL_LOCATION)" \
+	    "$(INSTALL_TOOL)" uninstall-dry-run \
+	    --destination "$(INSTALL_DESTINATION)" --command "$(INSTALL_BINARY)"
+
+## Remove the managed RepoCue executable
+uninstall.apply:
+	$(QUIET) "$(INSTALL_TOOL)" uninstall \
+	    --destination "$(INSTALL_DESTINATION)" --command "$(INSTALL_BINARY)"
+
+uninstall: uninstall.apply
