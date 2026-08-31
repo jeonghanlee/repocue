@@ -9,6 +9,31 @@ build-dir = "book"
 create-missing = false
 
 [output.html]
+default-theme = "rust"
+preferred-dark-theme = "ayu"
+smart-punctuation = true
+no-section-label = false
 site-url = "/repocue/"
 git-repository-url = "https://github.com/jeonghanlee/repocue"
 edit-url-template = "https://github.com/jeonghanlee/repocue/edit/master/docs/{path}"
+git-repository-icon = "fab-github"
+mathjax-support = true
+
+[output.html.print]
+enable = true
+page-break = true
+
+[output.html.fold]
+enable = false
+level = 0
+
+[output.html.search]
+enable = true
+limit-results = 20
+use-boolean-and = true
+boost-title = 2
+boost-hierarchy = 1
+boost-paragraph = 1
+expand = true
+heading-split-level = 3
+copy-js = true
