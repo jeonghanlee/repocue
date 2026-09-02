@@ -11,6 +11,25 @@ in `PATH`. From a repository checkout, run `make build.repocue` and replace
 `repocue` with `build/bin/repocue`. A direct Go build described in
 [INSTALLATION.md](INSTALLATION.md) instead produces `./repocue`.
 
+## Help
+
+List every command with a one-line summary:
+
+```bash
+repocue help
+```
+
+Show the synopsis, summary, and flag defaults of one command:
+
+```bash
+repocue help cue
+repocue cue --help
+```
+
+Help output is plain text on stdout with exit code 0. Running `repocue` without a command prints the same usage on stderr with exit code 2. Every other failure exits with code 1 and writes a single-line JSON error as the first line of stderr; an unknown command additionally prints plain-text usage guidance after that line.
+
+---
+
 ## Repository State
 
 Initialize the current Git repository with a deterministic full baseline:

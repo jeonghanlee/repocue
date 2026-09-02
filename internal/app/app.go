@@ -24,32 +24,69 @@ type App struct {
 	stderr io.Writer
 }
 
+// command binds one CLI verb to its argument synopsis, one-line summary,
+// and handler. The help output is derived from this table so every
+// dispatchable verb is documented.
+type command struct {
+	name     string
+	synopsis string
+	summary  string
+	detail   string
+	run      func(App, context.Context, []string) error
+}
+
+const (
+	programName      = "repocue"
+	helpCommand      = "help"
+	documentationURL = "https://jeonghanlee.github.io/repocue/"
+)
+
+var evaluationContractNote = "External runner and M2 experiment contracts are documented in docs/EVALUATION.md (" + documentationURL + "EVALUATION.html)."
+
+var helpFlags = map[string]bool{"-h": true, "--help": true, "-help": true}
+
+// commands is assigned in init so handlers may reference the table
+// without forming a package initialization cycle.
+var commands []command
+
+func init() {
+	commands = []command{
+		{"init", "[flags] [repository]", "Initialize a Git repository with a deterministic full baseline",
+			"The repository defaults to the current directory when omitted.", App.runInit},
+		{"status", "[flags]", "Inspect the live Git basis and cached RepoCue state", "", App.runStatus},
+		{"refresh", "[flags]", "Refresh changed tracked files and publish a snapshot when indexed state changed", "", App.runRefresh},
+		{"rebaseline", "[flags]", "Start a new epoch with a full baseline while retaining the superseded epoch", "", App.runRebaseline},
+		{"cue", "[flags]", "Generate a compact repository cue within an estimated token budget", "", App.runCue},
+		{"metrics", "[flags]", "Read recorded baseline, refresh, and cue measurements", "", App.runMetrics},
+		{"evaluate", "[flags]", "Run the model-neutral direct-versus-assisted repository evaluation",
+			evaluationContractNote, App.runEvaluate},
+		{"evaluate-m2", "[flags]", "Run one M2 evaluation condition and write its report",
+			evaluationContractNote, App.runEvaluateM2},
+	}
+}
+
+// Run dispatches the CLI. Help requests (help, -h, --help, help <command>,
+// <command> -h) print plain text to stdout and exit 0; a missing command
+// prints usage to stderr and exits 2; every other failure is a JSON error
+// on stderr with exit 1.
 func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	application := App{stdout: stdout, stderr: stderr}
 	if len(args) == 0 {
-		application.writeError(errors.New("command is required"))
+		application.writeUsage(stderr)
 		return 2
 	}
-	var err error
-	switch args[0] {
-	case "init":
-		err = application.runInit(ctx, args[1:])
-	case "status":
-		err = application.runStatus(ctx, args[1:])
-	case "refresh":
-		err = application.runRefresh(ctx, args[1:])
-	case "rebaseline":
-		err = application.runRebaseline(ctx, args[1:])
-	case "cue":
-		err = application.runCue(ctx, args[1:])
-	case "metrics":
-		err = application.runMetrics(ctx, args[1:])
-	case "evaluate":
-		err = application.runEvaluate(ctx, args[1:])
-	case "evaluate-m2":
-		err = application.runEvaluateM2(ctx, args[1:])
-	default:
-		err = fmt.Errorf("unknown command %q", args[0])
+	if args[0] == helpCommand || helpFlags[args[0]] {
+		return application.runHelp(ctx, args[1:])
+	}
+	cmd, found := lookupCommand(args[0])
+	if !found {
+		application.writeError(fmt.Errorf("unknown command %q", args[0]))
+		fmt.Fprintf(stderr, "Run '%s help' for usage.\n", programName)
+		return 1
+	}
+	err := cmd.run(application, ctx, args[1:])
+	if errors.Is(err, flag.ErrHelp) {
+		return 0
 	}
 	if err != nil {
 		application.writeError(err)
@@ -58,18 +95,79 @@ func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
 	return 0
 }
 
+func lookupCommand(name string) (command, bool) {
+	for _, cmd := range commands {
+		if cmd.name == name {
+			return cmd, true
+		}
+	}
+	return command{}, false
+}
+
+// runHelp prints the global usage, or delegates to the named command with a
+// help flag so its own flag set renders the command-level usage.
+func (a App) runHelp(ctx context.Context, args []string) int {
+	if len(args) > 1 {
+		a.writeError(errors.New("help accepts at most one command name"))
+		return 1
+	}
+	if len(args) == 0 || args[0] == helpCommand || helpFlags[args[0]] {
+		a.writeUsage(a.stdout)
+		return 0
+	}
+	cmd, found := lookupCommand(args[0])
+	if !found {
+		a.writeError(fmt.Errorf("unknown command %q", args[0]))
+		a.writeUsage(a.stderr)
+		return 1
+	}
+	if err := cmd.run(a, ctx, []string{"-h"}); !errors.Is(err, flag.ErrHelp) {
+		a.writeError(err)
+		return 1
+	}
+	return 0
+}
+
+func (a App) writeUsage(out io.Writer) {
+	fmt.Fprintf(out, "Usage: %s <command> [flags]\n\nCommands:\n", programName)
+	width := len(helpCommand)
+	for _, cmd := range commands {
+		if len(cmd.name) > width {
+			width = len(cmd.name)
+		}
+	}
+	for _, cmd := range commands {
+		fmt.Fprintf(out, "  %-*s  %s\n", width, cmd.name, cmd.summary)
+	}
+	fmt.Fprintf(out, "  %-*s  %s\n", width, helpCommand, "Show this usage or the usage of one command")
+	fmt.Fprintf(out, "\nRun '%s help <command>' or '%s <command> --help' for command flags.\n", programName, programName)
+}
+
 func (a App) runInit(ctx context.Context, args []string) error {
 	flags := newFlagSet("init")
 	cacheDir := flags.String("cache-dir", "", "cache root")
-	if err := flags.Parse(args); err != nil {
+	// A "--" terminator splits the arguments before parsing so it can never
+	// be consumed as a flag value; without one, flags may also follow the
+	// repository path and are parsed as a second round.
+	flagArgs, tail, terminated := splitAtTerminator(args)
+	if err := a.parseFlags(flags, flagArgs); err != nil {
 		return err
 	}
-	repositoryPath := "."
-	if flags.NArg() > 1 {
+	positionals := flags.Args()
+	if terminated {
+		positionals = append(positionals, tail...)
+	} else if len(positionals) > 1 {
+		if err := a.parseFlags(flags, positionals[1:]); err != nil {
+			return err
+		}
+		positionals = append([]string{positionals[0]}, flags.Args()...)
+	}
+	if len(positionals) > 1 {
 		return errors.New("init accepts at most one repository path")
 	}
-	if flags.NArg() == 1 {
-		repositoryPath = flags.Arg(0)
+	repositoryPath := "."
+	if len(positionals) == 1 {
+		repositoryPath = positionals[0]
 	}
 	repo, err := repository.Open(ctx, repositoryPath)
 	if err != nil {
@@ -95,7 +193,7 @@ func (a App) runStatus(ctx context.Context, args []string) error {
 	flags := newFlagSet("status")
 	repositoryPath := flags.String("repository", ".", "repository path")
 	cacheDir := flags.String("cache-dir", "", "cache root")
-	if err := flags.Parse(args); err != nil {
+	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
 	repo, err := repository.Open(ctx, *repositoryPath)
@@ -150,7 +248,7 @@ func (a App) runRefresh(ctx context.Context, args []string) error {
 	flags := newFlagSet("refresh")
 	repositoryPath := flags.String("repository", ".", "repository path")
 	cacheDir := flags.String("cache-dir", "", "cache root")
-	if err := flags.Parse(args); err != nil {
+	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
 	repo, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
@@ -184,7 +282,7 @@ func (a App) runRebaseline(ctx context.Context, args []string) error {
 	cacheDir := flags.String("cache-dir", "", "cache root")
 	label := flags.String("label", "manual", "epoch label")
 	reason := flags.String("reason", "manual", "rebaseline reason")
-	if err := flags.Parse(args); err != nil {
+	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
 	repo, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
@@ -213,11 +311,11 @@ func (a App) runCue(ctx context.Context, args []string) error {
 	flags := newFlagSet("cue")
 	repositoryPath := flags.String("repository", ".", "repository path")
 	cacheDir := flags.String("cache-dir", "", "cache root")
-	view := flags.String("view", "overview", "cue view")
-	since := flags.String("since", "", "starting snapshot")
+	view := flags.String("view", "overview", "cue view: overview, ranked, provenance, or placebo; delta or delta-v2 with --since")
+	since := flags.String("since", "", "starting snapshot id for a delta view (overview becomes delta)")
 	pathPrefix := flags.String("path", "", "path filter for provenance")
 	maxTokens := flags.Int("max-tokens", 500, "maximum estimated tokens")
-	if err := flags.Parse(args); err != nil {
+	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
 	if *maxTokens < 1 {
@@ -291,7 +389,7 @@ func (a App) runMetrics(ctx context.Context, args []string) error {
 	flags := newFlagSet("metrics")
 	repositoryPath := flags.String("repository", ".", "repository path")
 	cacheDir := flags.String("cache-dir", "", "cache root")
-	if err := flags.Parse(args); err != nil {
+	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
 	_, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
@@ -314,7 +412,7 @@ func (a App) runEvaluate(ctx context.Context, args []string) error {
 	directRunner := flags.String("direct-runner", "", "direct discovery runner executable")
 	assistedRunner := flags.String("assisted-runner", "", "RepoCue-assisted runner executable")
 	temporaryRoot := flags.String("temporary-root", "", "evaluation temporary workspace parent")
-	if err := flags.Parse(args); err != nil {
+	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
 	if flags.NArg() != 0 {
@@ -344,7 +442,7 @@ func (a App) runEvaluateM2(ctx context.Context, args []string) error {
 	outputDirectory := flags.String("output-directory", "", "final condition report directory")
 	runIndex := flags.Int("run-index", 1, "positive run index")
 	temporaryRoot := flags.String("temporary-root", "", "evaluation temporary workspace parent")
-	if err := flags.Parse(args); err != nil {
+	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
 	if flags.NArg() != 0 {
@@ -468,6 +566,35 @@ func newFlagSet(name string) *flag.FlagSet {
 	flags := flag.NewFlagSet(name, flag.ContinueOnError)
 	flags.SetOutput(io.Discard)
 	return flags
+}
+
+// parseFlags parses command arguments; a help request renders the command
+// usage with its flag defaults to stdout and returns flag.ErrHelp.
+func (a App) parseFlags(flags *flag.FlagSet, args []string) error {
+	err := flags.Parse(args)
+	if !errors.Is(err, flag.ErrHelp) {
+		return err
+	}
+	cmd, _ := lookupCommand(flags.Name())
+	fmt.Fprintf(a.stdout, "Usage: %s %s %s\n\n%s\n", programName, cmd.name, cmd.synopsis, cmd.summary)
+	if cmd.detail != "" {
+		fmt.Fprintf(a.stdout, "%s\n", cmd.detail)
+	}
+	fmt.Fprintf(a.stdout, "\nFlags:\n")
+	flags.SetOutput(a.stdout)
+	flags.PrintDefaults()
+	return err
+}
+
+// splitAtTerminator divides args at the first "--" into the flag-bearing
+// head and the positional tail, reporting whether a terminator was present.
+func splitAtTerminator(args []string) ([]string, []string, bool) {
+	for index, arg := range args {
+		if arg == "--" {
+			return args[:index], args[index+1:], true
+		}
+	}
+	return args, nil, false
 }
 
 func (a App) writeJSON(value any) error {

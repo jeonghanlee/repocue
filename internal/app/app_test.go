@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 
 	"github.com/jeonghanlee/repocue/internal/app"
@@ -159,4 +160,75 @@ func writeFile(t *testing.T, path, content string) {
 	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
+}
+
+func TestHelpPaths(t *testing.T) {
+	commands := []string{"init", "status", "refresh", "rebaseline", "cue", "metrics", "evaluate", "evaluate-m2"}
+	for _, args := range [][]string{{"help"}, {"--help"}, {"-h"}, {"help", "help"}} {
+		stdout, stderr, code := runRaw(args...)
+		if code != 0 || stderr != "" {
+			t.Fatalf("repocue %v: code %d stderr %q", args, code, stderr)
+		}
+		for _, name := range commands {
+			if !strings.Contains(stdout, "\n  "+name+" ") {
+				t.Fatalf("repocue %v: usage lacks command %q:\n%s", args, name, stdout)
+			}
+		}
+	}
+	for _, name := range commands {
+		viaHelp, stderr, code := runRaw("help", name)
+		if code != 0 || stderr != "" {
+			t.Fatalf("repocue help %s: code %d stderr %q", name, code, stderr)
+		}
+		viaFlag, stderr, code := runRaw(name, "--help")
+		if code != 0 || stderr != "" {
+			t.Fatalf("repocue %s --help: code %d stderr %q", name, code, stderr)
+		}
+		if viaHelp != viaFlag || !strings.HasPrefix(viaHelp, "Usage: repocue "+name+" ") || !strings.Contains(viaHelp, "Flags:") {
+			t.Fatalf("repocue %s usage mismatch:\n%s\n---\n%s", name, viaHelp, viaFlag)
+		}
+	}
+	if stdout, stderr, code := runRaw(); code != 2 || stdout != "" || !strings.HasPrefix(stderr, "Usage: repocue ") {
+		t.Fatalf("repocue without command: code %d stdout %q stderr %q", code, stdout, stderr)
+	}
+	stdout, stderr, code := runRaw("bogus")
+	if code != 1 || stdout != "" || !strings.Contains(stderr, "\"kind\":\"error\"") || !strings.Contains(stderr, "repocue help") {
+		t.Fatalf("repocue bogus: code %d stdout %q stderr %q", code, stdout, stderr)
+	}
+	if stdout, _, code := runRaw("help", "bogus"); code != 1 || stdout != "" {
+		t.Fatalf("repocue help bogus: code %d stdout %q", code, stdout)
+	}
+	if stdout, _, _ := runRaw("help", "init"); !strings.Contains(stdout, "defaults to the current directory") {
+		t.Fatalf("repocue help init lacks the repository default:\n%s", stdout)
+	}
+	for _, name := range []string{"evaluate", "evaluate-m2"} {
+		if stdout, _, _ := runRaw("help", name); !strings.Contains(stdout, "docs/EVALUATION.md") {
+			t.Fatalf("repocue help %s lacks the evaluation contract pointer:\n%s", name, stdout)
+		}
+	}
+	if stdout, _, _ := runRaw("help", "cue"); !strings.Contains(stdout, "delta-v2") {
+		t.Fatalf("repocue help cue lacks the view values:\n%s", stdout)
+	}
+	if stdout, stderr, code := runRaw("init", "/nonexistent", "--help"); code != 0 || stderr != "" || !strings.HasPrefix(stdout, "Usage: repocue init ") {
+		t.Fatalf("repocue init PATH --help: code %d stdout %q stderr %q", code, stdout, stderr)
+	}
+	if stdout, stderr, code := runRaw("init", "--", "/nonexistent", "--help"); code != 1 || stdout != "" || !strings.Contains(stderr, "at most one repository path") {
+		t.Fatalf("repocue init -- PATH --help: code %d stdout %q stderr %q", code, stdout, stderr)
+	}
+	if stdout, stderr, code := runRaw("init", "--cache-dir", "--", "/nonexistent"); code != 1 || stdout != "" || !strings.Contains(stderr, "needs an argument") {
+		t.Fatalf("repocue init --cache-dir -- PATH: code %d stdout %q stderr %q", code, stdout, stderr)
+	}
+	if stdout, stderr, code := runRaw("init", "a", "b"); code != 1 || stdout != "" || !strings.Contains(stderr, "at most one repository path") {
+		t.Fatalf("repocue init a b: code %d stdout %q stderr %q", code, stdout, stderr)
+	}
+	if stdout, stderr, code := runRaw("help", "cue", "extra"); code != 1 || stdout != "" || !strings.Contains(stderr, "at most one") {
+		t.Fatalf("repocue help cue extra: code %d stdout %q stderr %q", code, stdout, stderr)
+	}
+}
+
+func runRaw(args ...string) (string, string, int) {
+	var stdout bytes.Buffer
+	var stderr bytes.Buffer
+	code := app.Run(context.Background(), args, &stdout, &stderr)
+	return stdout.String(), stderr.String(), code
 }
