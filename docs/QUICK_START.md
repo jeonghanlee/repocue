@@ -86,8 +86,8 @@ receive a natural-language request:
 > with an overview limited to about 500 estimated tokens, and inspect files
 > directly only when the cue is incomplete or uncertain.
 
-The agent should run `repocue status`, initialize or refresh the maintained
-state when needed, and then run:
+The agent should run `repocue refresh`, initialize the repository first when
+refresh reports that RepoCue is not initialized, and then run:
 
 ```bash
 repocue cue --view overview --max-tokens 500

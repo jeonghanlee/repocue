@@ -17,20 +17,23 @@ The workflow requires the `repocue` executable and a Git repository.
    direct the user to the
    [RepoCue Quick Start](https://github.com/jeonghanlee/repocue/blob/master/docs/QUICK_START.md)
    instead of installing it automatically.
-3. Run `repocue status --repository <path>`.
-4. If the repository is not initialized, run `repocue init <path>`.
-5. If status reports that a refresh is needed, run
-   `repocue refresh --repository <path>`.
-6. Generate the requested cue. Use the overview view and a 500 estimated-token
+3. Run `repocue refresh --repository <path>`. The command re-reads only
+   changed tracked files and publishes a new snapshot only when the indexed
+   state changed, which includes the Git basis (branch, HEAD, staged, unstaged,
+   and untracked paths); otherwise it reports `"changed": false` and keeps
+   the current snapshot.
+4. If refresh fails because RepoCue is not initialized, run
+   `repocue init <path>` and continue.
+5. Generate the requested cue. Use the overview view and a 500 estimated-token
    budget when the user supplies neither:
 
    ```bash
    repocue cue --repository <path> --view overview --max-tokens 500
    ```
 
-7. Read freshness, snapshot, epoch, branch, HEAD, and dirty-state provenance
+6. Read freshness, snapshot, epoch, branch, HEAD, and dirty-state provenance
    from the structured JSON before relying on its content.
-8. Inspect repository files or Git state directly when the cue does not answer
+7. Inspect repository files or Git state directly when the cue does not answer
    the request. Report important fallback inspection rather than implying that
    the cue contained information it did not provide.
 
@@ -41,7 +44,11 @@ Treat both direct CLI requests and natural-language requests as valid.
 - "Show the current repository overview with RepoCue in about 500 tokens."
   maps to the overview command above.
 - "Use RepoCue to understand this repository before reading files." maps to
-  status, initialization or refresh when needed, and then an overview cue.
+  refresh, initialization when needed, and then an overview cue.
+- "Is the RepoCue context fresh?" maps to
+  `repocue status --repository <path>`. Read its `freshness` field, which
+  is `current`, `dirty-but-indexed`, or `refresh-needed`. Status is
+  read-only and never refreshes.
 - A request for changes since a named snapshot maps to:
 
   ```bash
