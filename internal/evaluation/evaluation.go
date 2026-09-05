@@ -364,7 +364,7 @@ func Run(ctx context.Context, config Config) (Report, error) {
 }
 
 func runExternal(ctx context.Context, repo *repository.Repository, state model.CurrentState, arm, runner, taskFile, cueFile string) (ArmResult, error) {
-	before, err := repo.IncrementalScan(ctx, state.Files)
+	before, err := repo.ValidateSnapshot(ctx, state.Snapshot, state.Files)
 	if err != nil {
 		return ArmResult{}, fmt.Errorf("capture %s runner basis: %w", arm, err)
 	}
@@ -401,7 +401,7 @@ func runExternal(ctx context.Context, repo *repository.Repository, state model.C
 	if err := validateObservation(observation, arm); err != nil {
 		return ArmResult{}, err
 	}
-	after, err := repo.IncrementalScan(ctx, state.Files)
+	after, err := repo.ValidateSnapshot(ctx, state.Snapshot, state.Files)
 	if err != nil {
 		return ArmResult{}, fmt.Errorf("verify %s runner basis: %w", arm, err)
 	}

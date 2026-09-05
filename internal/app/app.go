@@ -60,7 +60,7 @@ func init() {
 		{"metrics", "[flags]", "Read recorded baseline, refresh, and cue measurements", "", App.runMetrics},
 		{"evaluate", "[flags]", "Run the model-neutral direct-versus-assisted repository evaluation",
 			evaluationContractNote, App.runEvaluate},
-		{"evaluate-m2", "[flags]", "Run one M2 evaluation condition and write its report",
+		{"evaluate-m2", "[flags]", "Run the five-condition M2 evaluation and publish one report set",
 			evaluationContractNote, App.runEvaluateM2},
 	}
 }
@@ -196,6 +196,9 @@ func (a App) runStatus(ctx context.Context, args []string) error {
 	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
+	if err := requireFlagsOnly(flags); err != nil {
+		return err
+	}
 	repo, err := repository.Open(ctx, *repositoryPath)
 	if err != nil {
 		return err
@@ -251,6 +254,9 @@ func (a App) runRefresh(ctx context.Context, args []string) error {
 	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
+	if err := requireFlagsOnly(flags); err != nil {
+		return err
+	}
 	repo, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
 	if err != nil {
 		return err
@@ -285,6 +291,9 @@ func (a App) runRebaseline(ctx context.Context, args []string) error {
 	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
+	if err := requireFlagsOnly(flags); err != nil {
+		return err
+	}
 	repo, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
 	if err != nil {
 		return err
@@ -316,6 +325,9 @@ func (a App) runCue(ctx context.Context, args []string) error {
 	pathPrefix := flags.String("path", "", "path filter for provenance")
 	maxTokens := flags.Int("max-tokens", 500, "maximum estimated tokens")
 	if err := a.parseFlags(flags, args); err != nil {
+		return err
+	}
+	if err := requireFlagsOnly(flags); err != nil {
 		return err
 	}
 	if *maxTokens < 1 {
@@ -359,9 +371,9 @@ func (a App) runCue(ctx context.Context, args []string) error {
 		case "placebo":
 			serialized, estimated, err = cue.Placebo(state, freshness, *maxTokens)
 		case "ranked":
-			facts, factsErr := repo.ContextFacts(ctx)
+			facts, factsErr := repo.ContextFactsAt(ctx, state.Snapshot, state.Files)
 			if factsErr != nil {
-				return factsErr
+				return fmt.Errorf("build ranked cue from snapshot %s: %w", state.Snapshot.ID, factsErr)
 			}
 			serialized, estimated, err = cue.RankedOverview(state, cue.RankedFacts{
 				RecentCommits: facts.RecentCommits, EntryPoints: facts.EntryPoints, MakeTargets: facts.MakeTargets,
@@ -390,6 +402,9 @@ func (a App) runMetrics(ctx context.Context, args []string) error {
 	repositoryPath := flags.String("repository", ".", "repository path")
 	cacheDir := flags.String("cache-dir", "", "cache root")
 	if err := a.parseFlags(flags, args); err != nil {
+		return err
+	}
+	if err := requireFlagsOnly(flags); err != nil {
 		return err
 	}
 	_, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
@@ -439,7 +454,7 @@ func (a App) runEvaluateM2(ctx context.Context, args []string) error {
 	taskFile := flags.String("task-file", "", "runner task file")
 	runner := flags.String("runner", "", "condition runner executable")
 	oracleTool := flags.String("oracle-tool", "", "structural oracle executable")
-	outputDirectory := flags.String("output-directory", "", "final condition report directory")
+	outputDirectory := flags.String("output-directory", "", "final report-set parent directory")
 	runIndex := flags.Int("run-index", 1, "positive run index")
 	temporaryRoot := flags.String("temporary-root", "", "evaluation temporary workspace parent")
 	if err := a.parseFlags(flags, args); err != nil {
@@ -595,6 +610,13 @@ func splitAtTerminator(args []string) ([]string, []string, bool) {
 		}
 	}
 	return args, nil, false
+}
+
+func requireFlagsOnly(flags *flag.FlagSet) error {
+	if flags.NArg() != 0 {
+		return fmt.Errorf("%s accepts flags only", flags.Name())
+	}
+	return nil
 }
 
 func (a App) writeJSON(value any) error {

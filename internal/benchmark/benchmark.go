@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"slices"
 	"sort"
@@ -88,6 +89,9 @@ func ParseAndScore(serialized json.RawMessage, basis model.Basis) (Answer, Deter
 	if answer.SchemaVersion != AnswerSchemaVersion {
 		return Answer{}, DeterministicScore{}, errors.New("unsupported benchmark answer schema version")
 	}
+	if err := validateAnswerShape(serialized); err != nil {
+		return Answer{}, DeterministicScore{}, err
+	}
 
 	expectedTracked := append([]string{}, basis.Staged...)
 	expectedTracked = append(expectedTracked, basis.Unstaged...)
@@ -112,6 +116,105 @@ func ParseAndScore(serialized json.RawMessage, basis model.Basis) (Answer, Deter
 		Status: "observed", Passed: passed, Total: len(facts),
 		Ratio: float64(passed) / float64(len(facts)), Facts: facts,
 	}, nil
+}
+
+func validateAnswerShape(serialized json.RawMessage) error {
+	var root map[string]json.RawMessage
+	if err := json.Unmarshal(serialized, &root); err != nil {
+		return err
+	}
+	if err := requireFields(root, false,
+		"schema_version", "project_purpose", "git", "primary_entry_points", "major_components",
+		"important_documentation", "recent_relevant_changes", "project_symbols", "uncertainties"); err != nil {
+		return fmt.Errorf("benchmark answer: %w", err)
+	}
+	git, err := objectValue(root["git"], "git")
+	if err != nil {
+		return err
+	}
+	if err := requireFields(git, true, "branch", "head"); err != nil {
+		return fmt.Errorf("benchmark answer git: %w", err)
+	}
+	if err := requireFields(git, false, "dirty", "tracked_changes", "untracked"); err != nil {
+		return fmt.Errorf("benchmark answer git: %w", err)
+	}
+	for _, name := range []string{"tracked_changes", "untracked"} {
+		if err := stringArrayValue(git[name], "git."+name); err != nil {
+			return err
+		}
+	}
+	for _, name := range []string{"recent_relevant_changes", "uncertainties"} {
+		if err := stringArrayValue(root[name], name); err != nil {
+			return err
+		}
+	}
+	if err := objectArrayValue(root["primary_entry_points"], "primary_entry_points", []string{"path", "responsibility"}, nil); err != nil {
+		return err
+	}
+	if err := objectArrayValue(root["major_components"], "major_components", []string{"name", "responsibilities", "paths"}, []string{"responsibilities", "paths"}); err != nil {
+		return err
+	}
+	if err := objectArrayValue(root["important_documentation"], "important_documentation", []string{"path", "purpose"}, nil); err != nil {
+		return err
+	}
+	return objectArrayValue(root["project_symbols"], "project_symbols", []string{"name", "signature", "owner", "relevance"}, nil)
+}
+
+func requireFields(object map[string]json.RawMessage, allowNull bool, names ...string) error {
+	for _, name := range names {
+		value, found := object[name]
+		if !found {
+			return fmt.Errorf("missing required field %q", name)
+		}
+		if !allowNull && bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return fmt.Errorf("required field %q must not be null", name)
+		}
+	}
+	return nil
+}
+
+func objectValue(serialized json.RawMessage, name string) (map[string]json.RawMessage, error) {
+	var value map[string]json.RawMessage
+	if err := json.Unmarshal(serialized, &value); err != nil || value == nil {
+		return nil, fmt.Errorf("benchmark answer field %q must be an object", name)
+	}
+	return value, nil
+}
+
+func stringArrayValue(serialized json.RawMessage, name string) error {
+	var values []json.RawMessage
+	if err := json.Unmarshal(serialized, &values); err != nil || values == nil {
+		return fmt.Errorf("benchmark answer field %q must be an array", name)
+	}
+	for _, value := range values {
+		var decoded string
+		if err := json.Unmarshal(value, &decoded); err != nil || bytes.Equal(bytes.TrimSpace(value), []byte("null")) {
+			return fmt.Errorf("benchmark answer field %q must contain strings", name)
+		}
+	}
+	return nil
+}
+
+func objectArrayValue(serialized json.RawMessage, name string, required, stringArrays []string) error {
+	var values []json.RawMessage
+	if err := json.Unmarshal(serialized, &values); err != nil || values == nil {
+		return fmt.Errorf("benchmark answer field %q must be an array", name)
+	}
+	for index, value := range values {
+		item, err := objectValue(value, fmt.Sprintf("%s[%d]", name, index))
+		if err != nil {
+			return err
+		}
+		if err := requireFields(item, false, required...); err != nil {
+			return fmt.Errorf("benchmark answer %s[%d]: %w", name, index, err)
+		}
+		for _, field := range stringArrays {
+			if err := stringArrayValue(item[field], fmt.Sprintf("%s[%d].%s", name, index, field)); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
 }
 
 func equalPointers(left, right *string) bool {

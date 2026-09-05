@@ -176,8 +176,13 @@ func compactChanges(items []model.DeltaItem) []DeltaChange {
 			change.Before = map[string]any{"exists": false}
 			change.After = fileSummary(after)
 		case "file.content_changed":
-			change.Before = contentSummary(before)
-			change.After = contentSummary(after)
+			beforeSummary := contentSummary(before)
+			afterSummary := contentSummary(after)
+			beforeMetadata, afterMetadata := changedMetadata(before, after)
+			mergeSummary(beforeSummary, beforeMetadata)
+			mergeSummary(afterSummary, afterMetadata)
+			change.Before = beforeSummary
+			change.After = afterSummary
 		case "file.metadata_changed":
 			change.Before, change.After = changedMetadata(before, after)
 		case "file.state_changed":
@@ -235,6 +240,12 @@ func addChanged(before, after map[string]any, key string, oldValue, newValue any
 	}
 	before[key] = oldValue
 	after[key] = newValue
+}
+
+func mergeSummary(summary, changed map[string]any) {
+	for key, value := range changed {
+		summary[key] = value
+	}
 }
 
 func baseEnvelope(state model.CurrentState, freshness string, maxTokens int) Envelope {

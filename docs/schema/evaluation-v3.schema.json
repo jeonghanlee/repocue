@@ -38,7 +38,7 @@
     "baseline": {"type": "object"},
     "update": {"type": "object"},
     "cue": {"type": "object"},
-    "runner": {"type": "object"},
+    "runner": {"$ref": "evaluation-runner-v3.schema.json"},
     "limitations": {"type": "array", "items": {"type": "string"}}
   },
   "additionalProperties": false

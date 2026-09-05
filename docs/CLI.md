@@ -56,7 +56,9 @@ Start a new epoch with a full baseline while retaining the superseded epoch:
 repocue rebaseline --label milestone:first-prototype --reason manual
 ```
 
-All state commands accept `--repository PATH` where applicable. Use `--cache-dir PATH` to override the normal cache location.
+Except for the optional path accepted by `init`, state commands accept flags
+only. Use `--repository PATH` where applicable and `--cache-dir PATH` to
+override the normal cache location.
 
 ---
 
@@ -81,6 +83,10 @@ repocue cue --view ranked --max-tokens 500
 repocue cue --view provenance --path internal/ --max-tokens 500
 ```
 
+Ranked facts are emitted only when the live repository still matches the
+stored snapshot. A provenance cue reports `matched_files` and adds a
+`provenance_files_omitted` warning when the token budget omits file records.
+
 ---
 
 ## Metrics and Evaluation
@@ -97,7 +103,25 @@ Run the model-neutral repository evaluation without external agent runners:
 repocue evaluate --repository . --max-tokens 500
 ```
 
-External runner and M2 experiment contracts are documented in [EVALUATION.md](EVALUATION.md). The `repocue-codex-runner` binary is an evaluation adapter and is not installed by the user installation target.
+External runner and M2 experiment contracts are documented in
+[EVALUATION.md](EVALUATION.md). The `repocue-codex-runner` binary is an
+evaluation adapter and is not installed by the user installation target.
+
+Run the five-condition M2 harness without an external agent runner:
+
+```bash
+repocue evaluate-m2 \
+  --repository . \
+  --oracle-tool tools/evaluation/structural-oracle.bash \
+  --output-directory /tmp/repocue-m2-reports \
+  --temporary-root /tmp/repocue-m2-work \
+  --max-tokens 500
+```
+
+The output parent receives one generated report-set directory containing all
+five condition reports. Output and temporary paths must be outside both the
+evaluated worktree and its Git directory. RepoCue creates either parent when it
+does not exist.
 
 ---
 

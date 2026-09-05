@@ -117,3 +117,15 @@ func TestParseAndScoreReportsIncorrectFact(t *testing.T) {
 		t.Fatalf("unexpected score: %#v", score)
 	}
 }
+
+func TestParseAndScoreRejectsIncompleteAnswerContract(t *testing.T) {
+	for _, serialized := range []json.RawMessage{
+		json.RawMessage(`{}`),
+		json.RawMessage(`{"schema_version":"repocue/benchmark-answer-2"}`),
+		json.RawMessage(`{"schema_version":"repocue/benchmark-answer-2","project_purpose":"Example","git":{},"primary_entry_points":[],"major_components":[],"important_documentation":[],"recent_relevant_changes":[],"project_symbols":[],"uncertainties":[]}`),
+	} {
+		if _, _, err := ParseAndScore(serialized, model.Basis{}); err == nil {
+			t.Fatalf("incomplete benchmark answer was accepted: %s", serialized)
+		}
+	}
+}

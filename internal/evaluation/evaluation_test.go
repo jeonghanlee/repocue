@@ -164,7 +164,8 @@ func TestObservedArmScoresStructuredBenchmarkAnswer(t *testing.T) {
 		SchemaVersion:      benchmark.AnswerSchemaVersion,
 		Git:                benchmark.GitState{Branch: &branch, Head: &head, TrackedChanges: []string{}, Untracked: []string{}},
 		PrimaryEntryPoints: []benchmark.EntryPoint{}, MajorComponents: []benchmark.Component{},
-		ImportantDocumentation: []benchmark.Document{}, RecentRelevantChanges: []string{}, Uncertainties: []string{},
+		ImportantDocumentation: []benchmark.Document{}, RecentRelevantChanges: []string{},
+		ProjectSymbols: []benchmark.ProjectSymbol{}, Uncertainties: []string{},
 	}
 	serialized, err := json.Marshal(answer)
 	if err != nil {

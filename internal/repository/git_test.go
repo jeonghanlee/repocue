@@ -1,7 +1,10 @@
 package repository
 
 import (
+	"bytes"
 	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"errors"
 	"os"
 	"os/exec"
@@ -12,6 +15,64 @@ import (
 	"testing"
 	"time"
 )
+
+func TestReadStableFileStreamsDigestAndBoundedPrefix(t *testing.T) {
+	content := bytes.Repeat([]byte("0123456789abcdef"), 128*1024)
+	path := filepath.Join(t.TempDir(), "large.bin")
+	if err := os.WriteFile(path, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	info, err := os.Lstat(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	digest, prefix, size, after, err := readStableFile(context.Background(), path, info)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantDigest := sha256.Sum256(content)
+	if digest != "sha256:"+hex.EncodeToString(wantDigest[:]) || size != int64(len(content)) {
+		t.Fatalf("unexpected streamed file result: digest=%q size=%d", digest, size)
+	}
+	if len(prefix) != 8192 || !bytes.Equal(prefix, content[:8192]) || !sameFileInfo(info, after) {
+		t.Fatal("streamed file prefix or stable observation is incorrect")
+	}
+
+	canceled, cancel := context.WithCancel(context.Background())
+	cancel()
+	if _, _, _, _, err := readStableFile(canceled, path, info); !errors.Is(err, context.Canceled) {
+		t.Fatalf("canceled file read returned %v", err)
+	}
+}
+
+func TestFullScanStreamsLargeTrackedFile(t *testing.T) {
+	root := t.TempDir()
+	runFixtureGit(t, root, "init", "-b", "main")
+	runFixtureGit(t, root, "config", "user.name", "RepoCue Test")
+	runFixtureGit(t, root, "config", "user.email", "repocue@example.invalid")
+	content := bytes.Repeat([]byte("0123456789abcdef"), 128*1024)
+	content[0] = 0
+	path := filepath.Join(root, "large.bin")
+	if err := os.WriteFile(path, content, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	runFixtureGit(t, root, "add", "large.bin")
+	runFixtureGit(t, root, "commit", "-m", "Add large file")
+	repository, err := Open(context.Background(), root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	scan, err := repository.FullScan(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	wantDigest := sha256.Sum256(content)
+	if len(scan.Files) != 1 || scan.Files[0].ContentDigest != "sha256:"+hex.EncodeToString(wantDigest[:]) ||
+		scan.Files[0].SizeBytes != int64(len(content)) || scan.Files[0].FileType != "binary" ||
+		scan.Metrics.BytesScanned != int64(len(content)) {
+		t.Fatalf("large-file scan result is incorrect: %#v", scan)
+	}
+}
 
 func TestFullScanSupportsRepositoryWithoutCommit(t *testing.T) {
 	root := t.TempDir()

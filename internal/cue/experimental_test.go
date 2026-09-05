@@ -146,6 +146,8 @@ func TestProvenancePathFilterAndDeltaV2OmitContentDigests(t *testing.T) {
 	after := before
 	after.ContentDigest = "sha256:after"
 	after.SizeBytes = 100
+	after.WorkingTreeMode = "100755"
+	before.WorkingTreeMode = "100644"
 	delta, _, err := DeltaV2(state, model.Snapshot{ID: "snapshot-000000"}, []model.DeltaItem{{
 		Operation: "file.content_changed", Entity: "file:README.md", Path: "README.md", Before: &before, After: &after,
 	}}, "current", 500)
@@ -154,6 +156,41 @@ func TestProvenancePathFilterAndDeltaV2OmitContentDigests(t *testing.T) {
 	}
 	if strings.Contains(string(delta), "sha256:before") || strings.Contains(string(delta), "sha256:after") {
 		t.Fatalf("delta v2 exposed content digests: %s", delta)
+	}
+	if !strings.Contains(string(delta), `"working_tree_mode":"100755"`) {
+		t.Fatalf("delta v2 omitted concurrent metadata: %s", delta)
+	}
+}
+
+func TestProvenanceReportsBudgetTruncation(t *testing.T) {
+	state := experimentalState()
+	state.Files = make([]model.File, 0, 100)
+	for index := range 100 {
+		state.Files = append(state.Files, model.File{
+			Path: fmt.Sprintf("src/path-%03d.go", index), Exists: true, SizeBytes: 100,
+			ContentDigest: "sha256:" + strings.Repeat("a", 64), IndexObject: strings.Repeat("b", 40),
+		})
+	}
+	serialized, estimated, err := Provenance(state, "", "current", 500)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if estimated > 500 {
+		t.Fatalf("provenance cue exceeded budget: %d", estimated)
+	}
+	var envelope struct {
+		Content  provenanceContent `json:"content"`
+		Warnings []Warning         `json:"warnings"`
+	}
+	if err := json.Unmarshal(serialized, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	if envelope.Content.MatchedFiles != 100 || len(envelope.Content.Files) >= envelope.Content.MatchedFiles {
+		t.Fatalf("provenance cue did not expose truncation totals: %#v", envelope.Content)
+	}
+	if len(envelope.Warnings) != 1 || envelope.Warnings[0].Code != "provenance_files_omitted" ||
+		envelope.Warnings[0].Count != envelope.Content.MatchedFiles-len(envelope.Content.Files) {
+		t.Fatalf("provenance cue has incorrect truncation warning: %#v", envelope.Warnings)
 	}
 }
 

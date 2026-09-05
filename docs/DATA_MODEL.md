@@ -63,6 +63,11 @@ Delta items store optional before and after values so a future retention or
 checkpoint implementation can reference immutable snapshots without changing
 the public state model.
 
+One file path has one operation in a delta. When content and metadata change
+together, the operation remains `file.content_changed` and its cue projection
+also includes every changed metadata field so the concurrent change is not
+lost.
+
 These operations are not code-symbol semantic deltas. Later parsers may add
 separate symbol, dependency, and document operations without changing the
 existing file-level operation names.
@@ -88,9 +93,9 @@ database.
 M2 condition reports share a maintenance ID so baseline and refresh cost can
 be counted once across conditions and consumers. Each report records the
 condition, run index, repository state fingerprint, RepoCue snapshot, cue
-schema and size, runner observation, and limitations. Reports are written by
-temporary-file replacement only after condition and repository-state checks
-pass.
+schema and size, runner observation, and limitations. A complete five-report
+set is staged outside the evaluated repository and published as one directory
+only after every condition and repository-state check passes.
 
 M2 does not change the SQLite schema. Structural oracle candidates exist only
 while composing an evaluation cue. A future structural index must use stable

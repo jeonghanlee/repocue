@@ -34,6 +34,31 @@ func TestRefreshGitAndFilesystemTransitions(t *testing.T) {
 			wantChanged: true, wantOperations: []string{"file.content_changed", "repository.working_tree_changed"},
 		},
 		{
+			name: "content and mode changed",
+			mutate: func(t *testing.T, root string) {
+				path := filepath.Join(root, "README.md")
+				writeFile(t, path, "# Example\n\nModified and executable.\n")
+				if err := os.Chmod(path, 0o755); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantChanged: true, wantOperations: []string{"file.content_changed", "repository.working_tree_changed"},
+			verify: func(t *testing.T, _ map[string]any, changes []map[string]any) {
+				for _, change := range changes {
+					if change["path"] != "README.md" {
+						continue
+					}
+					before := change["before"].(map[string]any)
+					after := change["after"].(map[string]any)
+					if before["working_tree_mode"] != "100644" || after["working_tree_mode"] != "100755" {
+						t.Fatalf("content delta omitted mode change: before=%#v after=%#v", before, after)
+					}
+					return
+				}
+				t.Fatal("content and mode delta was not found")
+			},
+		},
+		{
 			name: "staged",
 			mutate: func(t *testing.T, root string) {
 				writeFile(t, filepath.Join(root, "README.md"), "# Example\n\nStaged.\n")

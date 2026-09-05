@@ -47,10 +47,17 @@ all condition contexts before starting an agent. Every report carries the same
 maintenance ID and RepoCue snapshot for that prepared state. Baseline and
 refresh cost are counted once in reuse analysis.
 
+Live Git facts and structural-oracle output are bracketed by snapshot checks.
+The harness stops if the repository no longer matches the maintained snapshot.
+The output directory and temporary workspace parent must be outside the
+evaluated worktree and Git directory so experiment artifacts cannot change a
+later condition.
+
 Each condition starts a fresh external runner process. The harness captures a
 state fingerprint before and after the process and rejects a run that modifies
-the repository. A completed report is serialized to a temporary file and
-renamed atomically. A failed run does not expose a final report.
+the repository. All five reports are written under a temporary report-set
+directory and published by one directory rename after every condition passes.
+A failed run exposes no part of the set and can be retried with the same index.
 
 The observed experiment uses three runs for every repository
 and condition. A complete comparison group therefore has 15 reports per
@@ -65,10 +72,17 @@ repository. Per-repository results are reported before any aggregate.
 - Experimental cue: `repocue/cue-2`
 - Qualitative assessment: `repocue/qualitative-assessment-2`
 
-Reports are named by repository, condition, model, and run index. They record
-the supplied repository path and resolved root, exact HEAD, state fingerprint,
-RepoCue snapshot, condition order, cue bytes, estimated cue tokens, runner
-metadata, token components, commands, final response, and limitations.
+Each published directory is named by repository, model, run index, and
+maintenance ID. Files within it are named by repository, condition, model, and
+run index. They record the supplied repository path and resolved root, exact
+HEAD, state fingerprint, RepoCue snapshot, condition order, cue bytes,
+estimated cue tokens, runner metadata, token components, commands, final
+response, and limitations.
+
+The runner observation contract requires ordered usage events and one final
+JSON object. Runtime validation rejects negative values, token or command
+totals that contradict their observations, unknown or inconsistent status
+values, basis metadata mismatches, and runner metadata drift across conditions.
 
 ## Codex Adapter
 

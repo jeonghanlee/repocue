@@ -38,7 +38,9 @@ CLI request
   -> project deterministic JSON
 ```
 
-Repository content is hashed but not stored. Ignored files are excluded.
+Repository content is hashed as a stream while retaining at most the first
+8 KiB for binary classification; file size does not determine scanner memory.
+Content is not stored. Ignored files are excluded.
 Non-ignored untracked paths affect dirty-state metadata but their content is
 not indexed in this slice.
 
@@ -87,6 +89,10 @@ Optional direct and assisted runners are separate executables. Runner-specific
 tokenizers and agent event formats remain outside the core packages. The
 harness verifies that each runner leaves the repository state unchanged.
 
+Facts derived from live Git commands are accepted only when scans before and
+after the read match the persisted snapshot. Ranked cues fail instead of
+combining an older snapshot envelope with facts from a newer repository state.
+
 `repocue-codex-runner` is the first adapter. It invokes a fresh ephemeral Codex
 non-interactive run, consumes the JSONL event stream, classifies observable
 commands, and returns one versioned model-neutral runner observation. The
@@ -112,6 +118,11 @@ condition receives a fresh external runner process. All assisted conditions
 use the same instruction and context budget. The direct condition receives no
 RepoCue context.
 
+M2 output and temporary paths must be outside the evaluated worktree and Git
+directory. The harness validates all five conditions before publishing a report-set directory
+with one atomic rename. A failed condition therefore exposes no part of its
+five-report set and the same run can be retried.
+
 The structural oracle is an evaluation tool, not a core backend. A Bash
 executable extracts conservative symbol candidates from tracked Bash and
 Python files. Go parses its tab-separated records, serializes JSON safely, and
@@ -123,6 +134,9 @@ The runner contract records every observed Codex `turn.completed.usage` event.
 Command classification and the sum of current sizes for explicitly named
 repository paths are derived measurements. That byte value is named
 `named_file_size_proxy_bytes`; it is not observed filesystem I/O.
+The harness rejects negative or internally inconsistent metrics, invalid
+measurement status values, mismatched repository or benchmark metadata, and
+condition sets that do not share identical runner metadata.
 
 ## Deployment Constraint
 

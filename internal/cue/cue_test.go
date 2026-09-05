@@ -75,6 +75,38 @@ func TestDeltaProjectsOnlyChangedMetadata(t *testing.T) {
 	}
 }
 
+func TestContentDeltaPreservesConcurrentMetadataChanges(t *testing.T) {
+	state := model.CurrentState{
+		Repository: model.Repository{ID: "repo-test", Name: "test"},
+		Epoch:      model.Epoch{ID: "epoch-000001"},
+		Snapshot:   model.Snapshot{ID: "snapshot-000002", Basis: model.Basis{ObservedAt: time.Unix(0, 0).UTC()}},
+	}
+	before := model.File{Path: "tool", Exists: true, WorkingTreeMode: "100644", ContentDigest: "sha256:before", SizeBytes: 10}
+	after := before
+	after.WorkingTreeMode = "100755"
+	after.ContentDigest = "sha256:after"
+	after.SizeBytes = 20
+	serialized, _, err := Delta(state, model.Snapshot{ID: "snapshot-000001"}, []model.DeltaItem{{
+		Operation: "file.content_changed", Entity: "file:tool", Path: "tool", Before: &before, After: &after,
+	}}, "current", 500)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var envelope struct {
+		Content struct {
+			Changes []DeltaChange `json:"changes"`
+		} `json:"content"`
+	}
+	if err := json.Unmarshal(serialized, &envelope); err != nil {
+		t.Fatal(err)
+	}
+	beforeValues := envelope.Content.Changes[0].Before.(map[string]any)
+	afterValues := envelope.Content.Changes[0].After.(map[string]any)
+	if beforeValues["working_tree_mode"] != "100644" || afterValues["working_tree_mode"] != "100755" {
+		t.Fatalf("content delta omitted concurrent metadata: before=%#v after=%#v", beforeValues, afterValues)
+	}
+}
+
 func TestOverviewRejectsInsufficientBudget(t *testing.T) {
 	state := model.CurrentState{
 		Repository: model.Repository{ID: "repo-test", Name: "test"},

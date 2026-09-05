@@ -65,6 +65,7 @@ type provenanceContent struct {
 	RepositoryID     string           `json:"repository_id"`
 	RepositoryDigest string           `json:"repository_digest"`
 	StatusDigest     string           `json:"status_digest"`
+	MatchedFiles     int              `json:"matched_files"`
 	Files            []provenanceFile `json:"files"`
 }
 
@@ -120,9 +121,14 @@ func Provenance(state model.CurrentState, pathPrefix, freshness string, maxToken
 		})
 	}
 	sort.Slice(content.Files, func(i, j int) bool { return content.Files[i].Path < content.Files[j].Path })
+	content.MatchedFiles = len(content.Files)
 	envelope := experimentalBase(state, "provenance", freshness, maxTokens)
 	envelope.Content = &content
 	for {
+		omitted := content.MatchedFiles - len(content.Files)
+		if omitted > 0 {
+			envelope.Warnings = []Warning{{Code: "provenance_files_omitted", Count: omitted}}
+		}
 		serialized, estimated, err := marshalExperimental(envelope, maxTokens)
 		if err == nil {
 			return serialized, estimated, nil

@@ -103,7 +103,7 @@ func (r *Repository) FullScan(ctx context.Context) (model.Scan, error) {
 	var bytesScanned int64
 	observations := make([]fileObservation, 0, len(entries))
 	for _, entry := range entries {
-		file, observation, readBytes, err := r.scanEntry(entry, staged, unstaged)
+		file, observation, readBytes, err := r.scanEntry(ctx, entry, staged, unstaged)
 		if err != nil {
 			return model.Scan{}, err
 		}
@@ -182,7 +182,7 @@ func (r *Repository) IncrementalScan(ctx context.Context, previous []model.File)
 			files = append(files, prior)
 			continue
 		}
-		file, observation, readBytes, err := r.scanEntry(entry, staged, unstaged)
+		file, observation, readBytes, err := r.scanEntry(ctx, entry, staged, unstaged)
 		if err != nil {
 			return model.Scan{}, err
 		}
@@ -278,6 +278,35 @@ func (r *Repository) ContextFacts(ctx context.Context) (ContextFacts, error) {
 	facts.EntryPoints = unique(facts.EntryPoints)
 	facts.MakeTargets = unique(facts.MakeTargets)
 	return facts, nil
+}
+
+// ContextFactsAt returns live-derived context facts only when the repository
+// remains identical to the supplied persisted snapshot for the whole read.
+func (r *Repository) ContextFactsAt(ctx context.Context, expected model.Snapshot, files []model.File) (ContextFacts, error) {
+	if _, err := r.ValidateSnapshot(ctx, expected, files); err != nil {
+		return ContextFacts{}, err
+	}
+	facts, err := r.ContextFacts(ctx)
+	if err != nil {
+		return ContextFacts{}, err
+	}
+	if _, err := r.ValidateSnapshot(ctx, expected, files); err != nil {
+		return ContextFacts{}, err
+	}
+	return facts, nil
+}
+
+// ValidateSnapshot verifies that the live Git and tracked-file state still
+// matches a persisted snapshot and returns the observed scan on success.
+func (r *Repository) ValidateSnapshot(ctx context.Context, expected model.Snapshot, files []model.File) (model.Scan, error) {
+	scan, err := r.IncrementalScan(ctx, files)
+	if err != nil {
+		return model.Scan{}, err
+	}
+	if scan.Basis.StatusDigest != expected.Basis.StatusDigest || scan.RepositoryDigest != expected.RepositoryDigest {
+		return model.Scan{}, errors.New("repository no longer matches the persisted snapshot")
+	}
+	return scan, nil
 }
 
 func (r *Repository) StateEvidence(ctx context.Context) (StateEvidence, error) {
@@ -429,7 +458,7 @@ func (s *scanSession) verifyVisibleIndex(ctx context.Context) error {
 	return nil
 }
 
-func (r *Repository) scanEntry(entry indexEntry, staged, unstaged map[string]struct{}) (model.File, fileObservation, int64, error) {
+func (r *Repository) scanEntry(ctx context.Context, entry indexEntry, staged, unstaged map[string]struct{}) (model.File, fileObservation, int64, error) {
 	fullPath := filepath.Join(r.Root, filepath.FromSlash(entry.Path))
 	info, err := os.Lstat(fullPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
@@ -457,20 +486,25 @@ func (r *Repository) scanEntry(entry indexEntry, staged, unstaged map[string]str
 		file.FileType = "gitlink"
 		return file, observation, 0, nil
 	}
-	var content []byte
+	var contentPrefix []byte
+	var contentDigest string
+	var sizeBytes int64
 	if info.Mode()&os.ModeSymlink != 0 {
 		target, err := os.Readlink(fullPath)
 		if err != nil {
 			return model.File{}, fileObservation{}, 0, fmt.Errorf("read symlink %s: %w", entry.Path, err)
 		}
-		content = []byte(target)
+		contentPrefix = []byte(target)
 		observation.symlinkTarget = target
 		file.WorkingTreeMode = "120000"
+		digest := sha256.Sum256(contentPrefix)
+		contentDigest = "sha256:" + hex.EncodeToString(digest[:])
+		sizeBytes = int64(len(contentPrefix))
 	} else {
 		if !info.Mode().IsRegular() {
 			return model.File{}, fileObservation{}, 0, fmt.Errorf("tracked path %s is not a regular file", entry.Path)
 		}
-		content, observation.info, err = readStableFile(fullPath, info)
+		contentDigest, contentPrefix, sizeBytes, observation.info, err = readStableFile(ctx, fullPath, info)
 		if err != nil {
 			return model.File{}, fileObservation{}, 0, fmt.Errorf("read %s: %w", entry.Path, err)
 		}
@@ -479,33 +513,58 @@ func (r *Repository) scanEntry(entry indexEntry, staged, unstaged map[string]str
 			file.WorkingTreeMode = "100755"
 		}
 	}
-	digest := sha256.Sum256(content)
-	file.SizeBytes = int64(len(content))
-	file.ContentDigest = "sha256:" + hex.EncodeToString(digest[:])
-	file.FileType = classifyType(entry.Path, content, isDocument(entry.Path))
+	file.SizeBytes = sizeBytes
+	file.ContentDigest = contentDigest
+	file.FileType = classifyType(entry.Path, contentPrefix, isDocument(entry.Path))
 	file.Language = classifyLanguage(entry.Path)
 	file.Document = isDocument(entry.Path)
-	return file, observation, int64(len(content)), nil
+	return file, observation, sizeBytes, nil
 }
 
-func readStableFile(path string, before os.FileInfo) ([]byte, os.FileInfo, error) {
+func readStableFile(ctx context.Context, path string, before os.FileInfo) (string, []byte, int64, os.FileInfo, error) {
 	file, err := os.Open(path)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, 0, nil, err
 	}
 	defer file.Close()
-	content, err := io.ReadAll(file)
-	if err != nil {
-		return nil, nil, err
+	hasher := sha256.New()
+	prefix := make([]byte, 0, 8192)
+	buffer := make([]byte, 32*1024)
+	var size int64
+	for {
+		if err := ctx.Err(); err != nil {
+			return "", nil, 0, nil, err
+		}
+		count, readErr := file.Read(buffer)
+		if count > 0 {
+			chunk := buffer[:count]
+			if _, err := hasher.Write(chunk); err != nil {
+				return "", nil, 0, nil, err
+			}
+			remaining := cap(prefix) - len(prefix)
+			if remaining > len(chunk) {
+				remaining = len(chunk)
+			}
+			if remaining > 0 {
+				prefix = append(prefix, chunk[:remaining]...)
+			}
+			size += int64(count)
+		}
+		if errors.Is(readErr, io.EOF) {
+			break
+		}
+		if readErr != nil {
+			return "", nil, 0, nil, readErr
+		}
 	}
 	after, err := os.Lstat(path)
 	if err != nil {
-		return nil, nil, err
+		return "", nil, 0, nil, err
 	}
-	if !os.SameFile(before, after) || before.Size() != after.Size() || !before.ModTime().Equal(after.ModTime()) {
-		return nil, nil, errors.New("file changed while being read")
+	if !sameFileInfo(before, after) {
+		return "", nil, 0, nil, errors.New("file changed while being read")
 	}
-	return content, after, nil
+	return "sha256:" + hex.EncodeToString(hasher.Sum(nil)), prefix, size, after, nil
 }
 
 func validateObservations(observations []fileObservation) (time.Time, error) {

@@ -111,8 +111,28 @@ func TestExperimentalCueViewsAndM2DryRun(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if len(entries) != 5 {
-		t.Fatalf("got %d final report files, want 5", len(entries))
+	if len(entries) != 1 || !entries[0].IsDir() {
+		t.Fatalf("got report-set entries %#v, want one directory", entries)
+	}
+	reportEntries, err := os.ReadDir(filepath.Join(reports, entries[0].Name()))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(reportEntries) != 5 {
+		t.Fatalf("got %d final report files, want 5", len(reportEntries))
+	}
+}
+
+func TestRankedCueRejectsLiveFactsFromAnotherSnapshot(t *testing.T) {
+	repository := createGitRepository(t)
+	cache := t.TempDir()
+	runCLI(t, "init", "--cache-dir", cache, repository)
+	writeFile(t, filepath.Join(repository, "CHANGELOG.md"), "# New live state\n")
+	runGit(t, repository, "add", "CHANGELOG.md")
+	runGit(t, repository, "commit", "-m", "Advance live state")
+	stdout, stderr, code := runRaw("cue", "--cache-dir", cache, "--repository", repository, "--view", "ranked")
+	if code != 1 || stdout != "" || !strings.Contains(stderr, "no longer matches the persisted snapshot") {
+		t.Fatalf("ranked cue mixed live facts with a stored snapshot: code=%d stdout=%q stderr=%q", code, stdout, stderr)
 	}
 }
 
@@ -223,6 +243,15 @@ func TestHelpPaths(t *testing.T) {
 	}
 	if stdout, stderr, code := runRaw("help", "cue", "extra"); code != 1 || stdout != "" || !strings.Contains(stderr, "at most one") {
 		t.Fatalf("repocue help cue extra: code %d stdout %q stderr %q", code, stdout, stderr)
+	}
+}
+
+func TestFlagOnlyCommandsRejectPositionalArguments(t *testing.T) {
+	for _, name := range []string{"status", "refresh", "rebaseline", "cue", "metrics"} {
+		stdout, stderr, code := runRaw(name, "unexpected")
+		if code != 1 || stdout != "" || !strings.Contains(stderr, name+" accepts flags only") {
+			t.Fatalf("repocue %s accepted a positional argument: code=%d stdout=%q stderr=%q", name, code, stdout, stderr)
+		}
 	}
 }
 

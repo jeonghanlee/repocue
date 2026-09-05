@@ -195,6 +195,32 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 	if err != nil {
 		return M2Manifest{}, err
 	}
+	paths := []struct {
+		name string
+		path string
+	}{
+		{"output directory", config.OutputDirectory},
+		{"temporary root", config.TemporaryRoot},
+	}
+	for _, candidate := range paths {
+		if candidate.path == "" {
+			continue
+		}
+		for _, protectedRoot := range []string{repo.Root, repo.GitDir} {
+			inside, err := pathWithinRepository(protectedRoot, candidate.path)
+			if err != nil {
+				return M2Manifest{}, fmt.Errorf("resolve M2 %s: %w", candidate.name, err)
+			}
+			if inside {
+				return M2Manifest{}, fmt.Errorf("M2 %s must be outside the evaluated repository", candidate.name)
+			}
+		}
+	}
+	if config.TemporaryRoot != "" {
+		if err := os.MkdirAll(config.TemporaryRoot, 0o755); err != nil {
+			return M2Manifest{}, fmt.Errorf("create M2 temporary root: %w", err)
+		}
+	}
 	workspace, err := os.MkdirTemp(config.TemporaryRoot, "repocue-m2-")
 	if err != nil {
 		return M2Manifest{}, fmt.Errorf("create M2 workspace: %w", err)
@@ -241,13 +267,13 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 	if err != nil {
 		return M2Manifest{}, err
 	}
+	facts, err := repo.ContextFactsAt(ctx, current.Snapshot, current.Files)
+	if err != nil {
+		return M2Manifest{}, fmt.Errorf("capture M2 context facts: %w", err)
+	}
 	evidence, err := repo.StateEvidence(ctx)
 	if err != nil {
-		return M2Manifest{}, err
-	}
-	facts, err := repo.ContextFacts(ctx)
-	if err != nil {
-		return M2Manifest{}, err
+		return M2Manifest{}, fmt.Errorf("capture M2 repository evidence: %w", err)
 	}
 	oracleStarted := time.Now()
 	oracleCandidates, oracleLimitations, err := runStructuralOracle(ctx, config.OracleTool, repo.Root)
@@ -255,6 +281,16 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 		return M2Manifest{}, err
 	}
 	oracleDuration := time.Since(oracleStarted)
+	if _, err := repo.ValidateSnapshot(ctx, current.Snapshot, current.Files); err != nil {
+		return M2Manifest{}, fmt.Errorf("verify M2 structural context basis: %w", err)
+	}
+	afterEvidence, err := repo.StateEvidence(ctx)
+	if err != nil {
+		return M2Manifest{}, fmt.Errorf("verify M2 repository evidence: %w", err)
+	}
+	if evidence != afterEvidence {
+		return M2Manifest{}, errors.New("repository evidence changed during M2 context preparation")
+	}
 	freshness := "current"
 	if current.Snapshot.Basis.Dirty {
 		freshness = "dirty-but-indexed"
@@ -286,6 +322,7 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 		MaintenanceID: maintenanceID, Repository: repositorySummary, ConditionOrder: append([]string{}, M2Conditions...),
 		Reports: []M2ConditionReport{}, Limitations: append([]string{}, oracleLimitations...),
 	}
+	var runnerIdentity *RunnerMetadata
 	for order, condition := range M2Conditions {
 		report := M2ConditionReport{
 			SchemaVersion: M2SchemaVersion, Kind: "m2-condition", GeneratedAt: time.Now().UTC(),
@@ -304,17 +341,23 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 			if err != nil {
 				return M2Manifest{}, err
 			}
+			if runnerIdentity == nil {
+				identity := observation.Metadata
+				runnerIdentity = &identity
+			} else if err := validateM2RunnerIdentity(*runnerIdentity, observation.Metadata); err != nil {
+				return M2Manifest{}, fmt.Errorf("condition %s: %w", condition, err)
+			}
 			report.Runner = &observation
 		}
 		if err := validateM2Report(report); err != nil {
 			return M2Manifest{}, err
 		}
-		if config.OutputDirectory != "" {
-			if err := writeM2ReportAtomic(config.OutputDirectory, report); err != nil {
-				return M2Manifest{}, err
-			}
-		}
 		manifest.Reports = append(manifest.Reports, report)
+	}
+	if config.OutputDirectory != "" {
+		if err := writeM2ReportSetAtomic(config.OutputDirectory, manifest.Reports); err != nil {
+			return M2Manifest{}, err
+		}
 	}
 	return manifest, nil
 }
@@ -379,7 +422,7 @@ func runStructuralOracle(ctx context.Context, tool, root string) ([]cue.Structur
 }
 
 func runM2External(ctx context.Context, repo *repository.Repository, state model.CurrentState, condition string, runIndex int, runner, taskFile, cueFile string) (M2RunnerObservation, error) {
-	before, err := repo.IncrementalScan(ctx, state.Files)
+	before, err := repo.ValidateSnapshot(ctx, state.Snapshot, state.Files)
 	if err != nil {
 		return M2RunnerObservation{}, fmt.Errorf("capture %s runner basis: %w", condition, err)
 	}
@@ -416,10 +459,10 @@ func runM2External(ctx context.Context, repo *repository.Repository, state model
 	if err != nil {
 		return M2RunnerObservation{}, fmt.Errorf("decode %s runner observation: %w", condition, err)
 	}
-	if err := validateM2Observation(observation, condition, runIndex); err != nil {
+	if err := validateM2Observation(observation, condition, runIndex, state.Snapshot); err != nil {
 		return M2RunnerObservation{}, err
 	}
-	after, err := repo.IncrementalScan(ctx, state.Files)
+	after, err := repo.ValidateSnapshot(ctx, state.Snapshot, state.Files)
 	if err != nil {
 		return M2RunnerObservation{}, fmt.Errorf("verify %s runner basis: %w", condition, err)
 	}
@@ -450,14 +493,197 @@ func decodeM2Observation(serialized []byte) (M2RunnerObservation, error) {
 	return observation, nil
 }
 
-func validateM2Observation(observation M2RunnerObservation, condition string, runIndex int) error {
+func validateM2Observation(observation M2RunnerObservation, condition string, runIndex int, expected model.Snapshot) error {
 	if observation.SchemaVersion != M2RunnerSchemaVersion || observation.Condition != condition || observation.RunIndex != runIndex {
 		return errors.New("runner observation does not match the requested condition contract")
 	}
-	if observation.Metadata.Adapter == "" || observation.Metadata.AdapterVersion == "" {
-		return errors.New("runner metadata requires adapter and adapter_version")
+	metadata := observation.Metadata
+	if metadata.Adapter == "" || metadata.AdapterVersion == "" || metadata.Model == "" ||
+		metadata.ReasoningEffort == "" || metadata.Sandbox == "" {
+		return errors.New("runner metadata requires adapter, adapter_version, model, reasoning_effort, and sandbox")
+	}
+	head := ""
+	if expected.Basis.Head != nil {
+		head = *expected.Basis.Head
+	}
+	if metadata.BenchmarkVersion != benchmark.Version || metadata.OutputSchemaVersion != benchmark.AnswerSchemaVersion ||
+		metadata.RepositoryHead != head || metadata.RepoCueSnapshot != expected.ID {
+		return errors.New("runner metadata does not match the requested benchmark and repository basis")
+	}
+	metrics := map[string]*int64{
+		"input_tokens": observation.Metrics.InputTokens, "cached_input_tokens": observation.Metrics.CachedInputTokens,
+		"output_tokens": observation.Metrics.OutputTokens, "reasoning_output_tokens": observation.Metrics.ReasoningOutputTokens,
+		"total_tokens": observation.Metrics.TotalTokens, "command_executions": observation.Metrics.CommandExecutions,
+		"repository_files_named":      observation.Metrics.RepositoryFilesNamed,
+		"named_file_size_proxy_bytes": observation.Metrics.NamedFileSizeProxyBytes,
+		"git_calls":                   observation.Metrics.GitCalls, "filesystem_search_calls": observation.Metrics.FilesystemSearchCalls,
+		"tool_calls":                           observation.Metrics.ToolCalls,
+		"fallback_repository_commands":         observation.Metrics.FallbackRepositoryCommands,
+		"fallback_repository_files_named":      observation.Metrics.FallbackRepositoryFilesNamed,
+		"fallback_named_file_size_proxy_bytes": observation.Metrics.FallbackNamedFileSizeProxyBytes,
+	}
+	for name, value := range metrics {
+		if value != nil && *value < 0 {
+			return fmt.Errorf("runner metric %s must be non-negative", name)
+		}
+	}
+	if observation.Metrics.ExecutionDurationMS != nil && *observation.Metrics.ExecutionDurationMS < 0 {
+		return errors.New("runner metric execution_duration_ms must be non-negative")
+	}
+	for name, status := range observation.Metrics.Statuses {
+		value, known := metrics[name]
+		if name == "execution_duration_ms" {
+			known = true
+			if observation.Metrics.ExecutionDurationMS != nil {
+				placeholder := int64(0)
+				value = &placeholder
+			}
+		}
+		if !known {
+			return fmt.Errorf("runner reported a status for unknown metric %q", name)
+		}
+		if status != measurementObserved && status != measurementDerived && status != measurementEstimated && status != measurementUnobserved {
+			return fmt.Errorf("runner metric %q has invalid status %q", name, status)
+		}
+		if value == nil && status != measurementUnobserved {
+			return fmt.Errorf("runner metric %q has status %q without a value", name, status)
+		}
+		if value != nil && status == measurementUnobserved {
+			return fmt.Errorf("runner metric %q has a value marked not_observed", name)
+		}
+	}
+	for name, value := range metrics {
+		if value != nil {
+			if _, found := observation.Metrics.Statuses[name]; !found {
+				return fmt.Errorf("runner metric %q requires a measurement status", name)
+			}
+		}
+	}
+	if observation.Metrics.ExecutionDurationMS != nil {
+		if _, found := observation.Metrics.Statuses["execution_duration_ms"]; !found {
+			return errors.New("runner metric \"execution_duration_ms\" requires a measurement status")
+		}
+	}
+	for _, name := range []string{"input_tokens", "cached_input_tokens", "output_tokens", "reasoning_output_tokens", "total_tokens"} {
+		if metrics[name] == nil {
+			return fmt.Errorf("runner observation requires metric %s", name)
+		}
+	}
+	if *observation.Metrics.CachedInputTokens > *observation.Metrics.InputTokens {
+		return errors.New("cached input tokens cannot exceed input tokens")
+	}
+	if *observation.Metrics.TotalTokens != *observation.Metrics.InputTokens+*observation.Metrics.OutputTokens {
+		return errors.New("total tokens must equal input tokens plus output tokens")
+	}
+	if len(observation.UsageEvents) == 0 {
+		return errors.New("runner observation requires at least one usage event")
+	}
+	var inputTokens, cachedInputTokens, outputTokens, reasoningOutputTokens int64
+	for index, event := range observation.UsageEvents {
+		if event.Turn != index+1 || event.InputTokens < 0 || event.CachedInputTokens < 0 ||
+			event.OutputTokens < 0 || event.ReasoningOutputTokens < 0 || event.CachedInputTokens > event.InputTokens {
+			return errors.New("runner usage events must be ordered and non-negative")
+		}
+		inputTokens += event.InputTokens
+		cachedInputTokens += event.CachedInputTokens
+		outputTokens += event.OutputTokens
+		reasoningOutputTokens += event.ReasoningOutputTokens
+	}
+	if inputTokens != *observation.Metrics.InputTokens || cachedInputTokens != *observation.Metrics.CachedInputTokens ||
+		outputTokens != *observation.Metrics.OutputTokens || reasoningOutputTokens != *observation.Metrics.ReasoningOutputTokens {
+		return errors.New("runner token metrics do not equal the usage event totals")
+	}
+	if observation.Metrics.CommandExecutions != nil && *observation.Metrics.CommandExecutions != int64(len(observation.Commands)) {
+		return errors.New("command execution count does not equal the command observations")
+	}
+	var gitCalls, searchCalls int64
+	namedFiles := map[string]struct{}{}
+	for _, count := range observation.TokenizerCounts {
+		if count.Tokenizer == "" || count.Tokens < 0 {
+			return errors.New("tokenizer counts require a name and non-negative token count")
+		}
+	}
+	for _, command := range observation.Commands {
+		if command.Command == "" || !validCommandClassification(command.Classification) || command.FilesRead == nil {
+			return errors.New("command observations require command, classification, and files_read")
+		}
+		if strings.Contains(command.Classification, "git") {
+			gitCalls++
+		}
+		if strings.Contains(command.Classification, "filesystem_search") {
+			searchCalls++
+		}
+		for _, path := range command.FilesRead {
+			cleaned := filepath.Clean(path)
+			if path == "" || filepath.IsAbs(path) || cleaned == "." || cleaned == ".." ||
+				strings.HasPrefix(cleaned, ".."+string(filepath.Separator)) {
+				return errors.New("command file observations must be relative repository paths")
+			}
+			namedFiles[filepath.ToSlash(cleaned)] = struct{}{}
+		}
+	}
+	if observation.Metrics.GitCalls != nil && *observation.Metrics.GitCalls != gitCalls {
+		return errors.New("git call count does not equal the command classifications")
+	}
+	if observation.Metrics.FilesystemSearchCalls != nil && *observation.Metrics.FilesystemSearchCalls != searchCalls {
+		return errors.New("filesystem search count does not equal the command classifications")
+	}
+	if observation.Metrics.RepositoryFilesNamed != nil && *observation.Metrics.RepositoryFilesNamed != int64(len(namedFiles)) {
+		return errors.New("repository file count does not equal the named command files")
+	}
+	if observation.Metrics.ToolCalls != nil && observation.Metrics.CommandExecutions != nil &&
+		*observation.Metrics.ToolCalls < *observation.Metrics.CommandExecutions {
+		return errors.New("tool call count cannot be smaller than command executions")
+	}
+	if condition == ConditionDirect {
+		if observation.Metrics.FallbackRepositoryCommands != nil || observation.Metrics.FallbackRepositoryFilesNamed != nil ||
+			observation.Metrics.FallbackNamedFileSizeProxyBytes != nil {
+			return errors.New("direct condition must not report fallback repository metrics")
+		}
+	} else if exceeds(observation.Metrics.FallbackRepositoryCommands, observation.Metrics.CommandExecutions) ||
+		exceeds(observation.Metrics.FallbackRepositoryFilesNamed, observation.Metrics.RepositoryFilesNamed) ||
+		exceeds(observation.Metrics.FallbackNamedFileSizeProxyBytes, observation.Metrics.NamedFileSizeProxyBytes) {
+		return errors.New("fallback repository metrics cannot exceed their total metrics")
+	}
+	for _, finding := range observation.Findings {
+		if finding.Category == "" || finding.Severity == "" || finding.Message == "" {
+			return errors.New("context findings require category, severity, and message")
+		}
+	}
+	for _, limitation := range observation.Limitations {
+		if limitation == "" {
+			return errors.New("runner limitations must not contain empty values")
+		}
+	}
+	if len(observation.FinalResponse) == 0 {
+		return errors.New("runner final_response is required")
+	}
+	if _, _, err := benchmark.ParseAndScore(observation.FinalResponse, expected.Basis); err != nil {
+		return fmt.Errorf("runner final_response does not satisfy %s: %w", benchmark.AnswerSchemaVersion, err)
 	}
 	return nil
+}
+
+func validateM2RunnerIdentity(expected, actual RunnerMetadata) error {
+	if expected != actual {
+		return errors.New("M2 conditions did not use identical runner metadata")
+	}
+	return nil
+}
+
+func validCommandClassification(value string) bool {
+	switch value {
+	case "other", "git", "filesystem_search", "filesystem_read",
+		"git+filesystem_search", "git+filesystem_read", "filesystem_search+filesystem_read",
+		"git+filesystem_search+filesystem_read":
+		return true
+	default:
+		return false
+	}
+}
+
+func exceeds(part, total *int64) bool {
+	return part != nil && (total == nil || *part > *total)
 }
 
 func validateM2Report(report M2ConditionReport) error {
@@ -473,41 +699,67 @@ func validateM2Report(report M2ConditionReport) error {
 	return nil
 }
 
-func writeM2ReportAtomic(directory string, report M2ConditionReport) error {
+func writeM2ReportSetAtomic(directory string, reports []M2ConditionReport) error {
+	if len(reports) != len(M2Conditions) {
+		return errors.New("M2 report set is incomplete")
+	}
 	if err := os.MkdirAll(directory, 0o755); err != nil {
 		return err
 	}
+	first := reports[0]
 	modelName := "no-runner"
-	if report.Runner != nil && report.Runner.Metadata.Model != "" {
-		modelName = report.Runner.Metadata.Model
+	if first.Runner != nil && first.Runner.Metadata.Model != "" {
+		modelName = first.Runner.Metadata.Model
 	}
-	name := fmt.Sprintf("%s_%s_%s_run-%02d.json", safeName(report.Repository.Name), safeName(report.Condition), safeName(modelName), report.RunIndex)
-	finalName := filepath.Join(directory, name)
-	if _, err := os.Stat(finalName); err == nil {
-		return fmt.Errorf("final M2 report already exists: %s", finalName)
+	setName := fmt.Sprintf("%s_%s_run-%02d_%s", safeName(first.Repository.Name), safeName(modelName), first.RunIndex, safeName(first.MaintenanceID))
+	finalSet := filepath.Join(directory, setName)
+	if _, err := os.Stat(finalSet); err == nil {
+		return fmt.Errorf("final M2 report set already exists: %s", finalSet)
 	} else if !errors.Is(err, os.ErrNotExist) {
 		return err
 	}
-	temporary, err := os.CreateTemp(directory, "."+name+".draft-")
+	staging, err := os.MkdirTemp(directory, "."+setName+".draft-")
 	if err != nil {
 		return err
 	}
-	temporaryName := temporary.Name()
-	defer os.Remove(temporaryName)
-	encoder := json.NewEncoder(temporary)
+	defer os.RemoveAll(staging)
+	for index, report := range reports {
+		if report.Condition != M2Conditions[index] || report.MaintenanceID != first.MaintenanceID ||
+			report.RunIndex != first.RunIndex || report.Repository.StateFingerprint != first.Repository.StateFingerprint {
+			return errors.New("M2 report set does not share one ordered repository basis")
+		}
+		if err := writeM2ReportFile(filepath.Join(staging, m2ReportName(report, modelName)), report); err != nil {
+			return err
+		}
+	}
+	if err := os.Rename(staging, finalSet); err != nil {
+		return fmt.Errorf("publish M2 report set: %w", err)
+	}
+	return nil
+}
+
+func m2ReportName(report M2ConditionReport, modelName string) string {
+	return fmt.Sprintf("%s_%s_%s_run-%02d.json", safeName(report.Repository.Name), safeName(report.Condition), safeName(modelName), report.RunIndex)
+}
+
+func writeM2ReportFile(path string, report M2ConditionReport) error {
+	file, err := os.OpenFile(path, os.O_WRONLY|os.O_CREATE|os.O_EXCL, 0o600)
+	if err != nil {
+		return err
+	}
+	defer file.Close()
+	encoder := json.NewEncoder(file)
 	encoder.SetIndent("", "  ")
 	if err := encoder.Encode(report); err != nil {
-		temporary.Close()
 		return err
 	}
-	if err := temporary.Sync(); err != nil {
-		temporary.Close()
+	if err := file.Sync(); err != nil {
 		return err
 	}
-	if err := temporary.Close(); err != nil {
+	if err := file.Close(); err != nil {
 		return err
 	}
-	return os.Rename(temporaryName, finalName)
+	return nil
 }
 
 func summarizeM2Repository(supplied string, repo *repository.Repository, scan model.Scan, evidence repository.StateEvidence) M2Repository {
@@ -540,4 +792,50 @@ var unsafeName = regexp.MustCompile(`[^A-Za-z0-9._-]+`)
 func safeName(value string) string {
 	value = unsafeName.ReplaceAllString(value, "-")
 	return strings.Trim(value, "-")
+}
+
+func pathWithinRepository(root, candidate string) (bool, error) {
+	resolvedRoot, err := canonicalPath(root)
+	if err != nil {
+		return false, err
+	}
+	resolved, err := canonicalPath(candidate)
+	if err != nil {
+		return false, err
+	}
+	if !strings.EqualFold(filepath.VolumeName(resolvedRoot), filepath.VolumeName(resolved)) {
+		return false, nil
+	}
+	relative, err := filepath.Rel(resolvedRoot, resolved)
+	if err != nil {
+		return false, err
+	}
+	return relative == "." || relative != ".." && !strings.HasPrefix(relative, ".."+string(filepath.Separator)), nil
+}
+
+func canonicalPath(path string) (string, error) {
+	absolute, err := filepath.Abs(path)
+	if err != nil {
+		return "", err
+	}
+	cursor := filepath.Clean(absolute)
+	suffix := []string{}
+	for {
+		resolved, err := filepath.EvalSymlinks(cursor)
+		if err == nil {
+			for index := len(suffix) - 1; index >= 0; index-- {
+				resolved = filepath.Join(resolved, suffix[index])
+			}
+			return filepath.Clean(resolved), nil
+		}
+		if !errors.Is(err, os.ErrNotExist) {
+			return "", err
+		}
+		parent := filepath.Dir(cursor)
+		if parent == cursor {
+			return "", err
+		}
+		suffix = append(suffix, filepath.Base(cursor))
+		cursor = parent
+	}
 }

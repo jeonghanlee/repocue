@@ -57,21 +57,21 @@ func TestParseEventsUsesObservedUsageAndDerivedCommands(t *testing.T) {
 
 func validateRunnerSchema(t *testing.T, observation any) {
 	t.Helper()
-	path := filepath.Join("..", "..", "docs", "schema", "evaluation-runner-v3.schema.json")
-	file, err := os.Open(path)
-	if err != nil {
-		t.Fatal(err)
-	}
-	defer file.Close()
-	var schemaDocument any
-	if err := json.NewDecoder(file).Decode(&schemaDocument); err != nil {
-		t.Fatal(err)
-	}
 	compiler := jsonschema.NewCompiler()
-	if err := compiler.AddResource("evaluation-runner-v3.schema.json", schemaDocument); err != nil {
-		t.Fatal(err)
+	for _, name := range []string{"evaluation-runner-v3.schema.json", "benchmark-answer-v2.schema.json"} {
+		serialized, err := os.ReadFile(filepath.Join("..", "..", "docs", "schema", name))
+		if err != nil {
+			t.Fatal(err)
+		}
+		var document any
+		if err := json.Unmarshal(serialized, &document); err != nil {
+			t.Fatal(err)
+		}
+		if err := compiler.AddResource("https://repocue.local/schema/"+name, document); err != nil {
+			t.Fatal(err)
+		}
 	}
-	schema, err := compiler.Compile("evaluation-runner-v3.schema.json")
+	schema, err := compiler.Compile("https://repocue.local/schema/evaluation-runner-v3.schema.json")
 	if err != nil {
 		t.Fatal(err)
 	}
