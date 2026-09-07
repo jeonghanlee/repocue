@@ -52,19 +52,26 @@ type scanSession struct {
 	gitCommands int
 }
 
-type fileObservation struct {
-	path          string
-	exists        bool
-	info          os.FileInfo
-	symlinkTarget string
-}
-
 func Open(ctx context.Context, path string) (*Repository, error) {
-	rootOutput, err := runGit(ctx, path, "rev-parse", "--show-toplevel")
+	output, err := runGit(ctx, path, "rev-parse", "--show-toplevel", "--absolute-git-dir")
 	if err != nil {
 		return nil, fmt.Errorf("discover Git repository: %w", err)
 	}
-	root, err := filepath.Abs(strings.TrimSpace(string(rootOutput)))
+	paths := strings.Split(strings.TrimSuffix(string(output), "\n"), "\n")
+	// rev-parse has no NUL-delimited path output. Query each path separately
+	// when embedded newlines make the combined output ambiguous.
+	if len(paths) != 2 {
+		rootOutput, err := runGit(ctx, path, "rev-parse", "--show-toplevel")
+		if err != nil {
+			return nil, fmt.Errorf("discover Git repository: %w", err)
+		}
+		gitDirOutput, err := runGit(ctx, path, "rev-parse", "--absolute-git-dir")
+		if err != nil {
+			return nil, fmt.Errorf("resolve Git directory: %w", err)
+		}
+		paths = []string{strings.TrimSuffix(string(rootOutput), "\n"), strings.TrimSuffix(string(gitDirOutput), "\n")}
+	}
+	root, err := filepath.Abs(paths[0])
 	if err != nil {
 		return nil, fmt.Errorf("resolve repository root: %w", err)
 	}
@@ -72,70 +79,50 @@ func Open(ctx context.Context, path string) (*Repository, error) {
 	if err != nil {
 		return nil, fmt.Errorf("resolve repository root symlinks: %w", err)
 	}
-	gitDirOutput, err := runGit(ctx, root, "rev-parse", "--absolute-git-dir")
-	if err != nil {
-		return nil, fmt.Errorf("resolve Git directory: %w", err)
-	}
-	gitDir := strings.TrimSpace(string(gitDirOutput))
+	gitDir := paths[1]
+	return newRepository(root, gitDir), nil
+}
+
+func newRepository(root, gitDir string) *Repository {
 	digest := sha256.Sum256([]byte(root))
 	return &Repository{
 		Root:   root,
 		GitDir: gitDir,
 		ID:     "repo-" + hex.EncodeToString(digest[:12]),
 		Name:   filepath.Base(root),
-	}, nil
+	}
 }
 
+// FullScan captures one Git basis and assumes the repository remains unchanged
+// until the scan returns. Concurrent filesystem mutation is not validated.
 func (r *Repository) FullScan(ctx context.Context) (model.Scan, error) {
 	started := time.Now()
 	session := &scanSession{repository: r}
-	before, err := session.captureBasis(ctx)
-	if err != nil {
-		return model.Scan{}, err
-	}
-	entries, err := session.indexEntries(ctx)
+	basis, entries, err := session.captureBasis(ctx)
 	if err != nil {
 		return model.Scan{}, err
 	}
 	files := make([]model.File, 0, len(entries))
-	staged := pathSet(before.Staged)
-	unstaged := pathSet(before.Unstaged)
+	staged := pathSet(basis.Staged)
+	unstaged := pathSet(basis.Unstaged)
 	var bytesScanned int64
-	observations := make([]fileObservation, 0, len(entries))
 	for _, entry := range entries {
-		file, observation, readBytes, err := r.scanEntry(ctx, entry, staged, unstaged)
+		file, readBytes, err := r.scanEntry(ctx, entry, staged, unstaged)
 		if err != nil {
 			return model.Scan{}, err
 		}
 		files = append(files, file)
-		observations = append(observations, observation)
 		bytesScanned += readBytes
 	}
-	after, err := session.captureBasis(ctx)
-	if err != nil {
+	if err := ctx.Err(); err != nil {
 		return model.Scan{}, err
 	}
-	if !before.SameState(after) {
-		return model.Scan{}, errors.New("repository changed during scan")
-	}
-	observedAt, err := validateObservations(observations)
-	if err != nil {
-		return model.Scan{}, err
-	}
-	finalBasis, err := session.captureBasis(ctx)
-	if err != nil {
-		return model.Scan{}, err
-	}
-	if !after.SameState(finalBasis) {
-		return model.Scan{}, errors.New("repository changed during scan validation")
-	}
-	finalBasis.ObservedAt = observedAt
 	repositoryHash, err := repositoryDigest(files)
 	if err != nil {
 		return model.Scan{}, err
 	}
 	return model.Scan{
-		Basis:            finalBasis,
+		Basis:            basis,
 		Files:            files,
 		RepositoryDigest: repositoryHash,
 		Metrics: model.ScanMetrics{
@@ -148,14 +135,12 @@ func (r *Repository) FullScan(ctx context.Context) (model.Scan, error) {
 	}, nil
 }
 
+// IncrementalScan captures one Git basis and reads changed tracked files.
+// The repository must remain unchanged until the scan returns.
 func (r *Repository) IncrementalScan(ctx context.Context, previous []model.File) (model.Scan, error) {
 	started := time.Now()
 	session := &scanSession{repository: r}
-	before, err := session.captureBasis(ctx)
-	if err != nil {
-		return model.Scan{}, err
-	}
-	entries, err := session.indexEntries(ctx)
+	basis, entries, err := session.captureBasis(ctx)
 	if err != nil {
 		return model.Scan{}, err
 	}
@@ -165,11 +150,10 @@ func (r *Repository) IncrementalScan(ctx context.Context, previous []model.File)
 	}
 	currentPaths := make(map[string]struct{}, len(entries))
 	files := make([]model.File, 0, len(entries))
-	staged := pathSet(before.Staged)
-	unstaged := pathSet(before.Unstaged)
+	staged := pathSet(basis.Staged)
+	unstaged := pathSet(basis.Unstaged)
 	filesScanned := 0
 	var bytesScanned int64
-	observations := make([]fileObservation, 0)
 	for _, entry := range entries {
 		currentPaths[entry.Path] = struct{}{}
 		prior, found := previousByPath[entry.Path]
@@ -182,12 +166,11 @@ func (r *Repository) IncrementalScan(ctx context.Context, previous []model.File)
 			files = append(files, prior)
 			continue
 		}
-		file, observation, readBytes, err := r.scanEntry(ctx, entry, staged, unstaged)
+		file, readBytes, err := r.scanEntry(ctx, entry, staged, unstaged)
 		if err != nil {
 			return model.Scan{}, err
 		}
 		files = append(files, file)
-		observations = append(observations, observation)
 		filesScanned++
 		bytesScanned += readBytes
 	}
@@ -197,31 +180,15 @@ func (r *Repository) IncrementalScan(ctx context.Context, previous []model.File)
 		}
 	}
 	sort.Slice(files, func(i, j int) bool { return files[i].Path < files[j].Path })
-	after, err := session.captureBasis(ctx)
-	if err != nil {
+	if err := ctx.Err(); err != nil {
 		return model.Scan{}, err
 	}
-	if !before.SameState(after) {
-		return model.Scan{}, errors.New("repository changed during scan")
-	}
-	observedAt, err := validateObservations(observations)
-	if err != nil {
-		return model.Scan{}, err
-	}
-	finalBasis, err := session.captureBasis(ctx)
-	if err != nil {
-		return model.Scan{}, err
-	}
-	if !after.SameState(finalBasis) {
-		return model.Scan{}, errors.New("repository changed during scan validation")
-	}
-	finalBasis.ObservedAt = observedAt
 	repositoryHash, err := repositoryDigest(files)
 	if err != nil {
 		return model.Scan{}, err
 	}
 	return model.Scan{
-		Basis:            finalBasis,
+		Basis:            basis,
 		Files:            files,
 		RepositoryDigest: repositoryHash,
 		Metrics: model.ScanMetrics{
@@ -236,7 +203,7 @@ func (r *Repository) IncrementalScan(ctx context.Context, previous []model.File)
 
 func (r *Repository) ContextFacts(ctx context.Context) (ContextFacts, error) {
 	session := &scanSession{repository: r}
-	entries, err := session.indexEntries(ctx)
+	entries, _, err := session.indexEntries(ctx)
 	if err != nil {
 		return ContextFacts{}, err
 	}
@@ -346,40 +313,48 @@ func isEntryPointPath(path string) bool {
 	return path == "Makefile" || path == "go.mod" || path == "pyproject.toml"
 }
 
-func (s *scanSession) captureBasis(ctx context.Context) (model.Basis, error) {
-	branch, err := s.optionalGitValue(ctx, "symbolic-ref", "--quiet", "--short", "HEAD")
+func (s *scanSession) captureBasis(ctx context.Context) (model.Basis, []indexEntry, error) {
+	output, err := s.runGit(ctx, "--no-optional-locks", "status", "--porcelain=v2", "--branch",
+		"--no-ahead-behind", "--no-renames", "--untracked-files=all", "-z")
 	if err != nil {
-		return model.Basis{}, fmt.Errorf("read branch: %w", err)
+		return model.Basis{}, nil, fmt.Errorf("read Git status: %w", err)
 	}
-	head, err := s.optionalGitValue(ctx, "rev-parse", "--verify", "--quiet", "HEAD^{commit}")
+	basis, err := parseStatus(output)
 	if err != nil {
-		return model.Basis{}, fmt.Errorf("read HEAD: %w", err)
+		return model.Basis{}, nil, err
 	}
-	staged, err := s.pathList(ctx, "diff", "--cached", "--name-only", "--no-renames", "-z", "--")
+	// Git's short symbolic ref preserves namespace disambiguation and distinguishes
+	// a branch literally named "(detached)" from an actual detached HEAD.
+	branchOutput, attached, err := s.runOptionalGit(ctx, "symbolic-ref", "--quiet", "--short", "HEAD")
 	if err != nil {
-		return model.Basis{}, fmt.Errorf("read staged paths: %w", err)
+		return model.Basis{}, nil, fmt.Errorf("read branch: %w", err)
 	}
-	unstaged, err := s.pathList(ctx, "diff", "--name-only", "--no-renames", "-z", "--")
+	if attached {
+		branch := strings.TrimSpace(string(branchOutput))
+		basis.Branch = &branch
+	}
+	entries, indexDigest, err := s.indexEntries(ctx)
 	if err != nil {
-		return model.Basis{}, fmt.Errorf("read unstaged paths: %w", err)
+		return model.Basis{}, nil, err
 	}
-	untracked, err := s.pathList(ctx, "ls-files", "--others", "--exclude-standard", "-z")
-	if err != nil {
-		return model.Basis{}, fmt.Errorf("read untracked paths: %w", err)
+	// Status and diff have different defaults for untracked submodule content.
+	// Preserve diff's existing configuration-sensitive semantics for gitlinks.
+	for _, entry := range entries {
+		if entry.Mode != "160000" {
+			continue
+		}
+		basis.Staged, err = s.diffPaths(ctx, true)
+		if err != nil {
+			return model.Basis{}, nil, err
+		}
+		basis.Unstaged, err = s.diffPaths(ctx, false)
+		if err != nil {
+			return model.Basis{}, nil, err
+		}
+		break
 	}
-	unmerged, err := s.pathList(ctx, "ls-files", "--unmerged", "-z")
-	if err != nil {
-		return model.Basis{}, fmt.Errorf("read unmerged paths: %w", err)
-	}
-	if len(unmerged) > 0 {
-		return model.Basis{}, errors.New("unmerged index entries are not supported")
-	}
-	indexOutput, err := s.runGit(ctx, "ls-files", "--stage", "-z")
-	if err != nil {
-		return model.Basis{}, fmt.Errorf("read index state: %w", err)
-	}
-	indexHash := sha256.Sum256(indexOutput)
-	indexDigest := "sha256:" + hex.EncodeToString(indexHash[:])
+	branch, head := basis.Branch, basis.Head
+	staged, unstaged, untracked := basis.Staged, basis.Unstaged, basis.Untracked
 	state := struct {
 		Branch    *string  `json:"branch"`
 		Head      *string  `json:"head"`
@@ -395,11 +370,11 @@ func (s *scanSession) captureBasis(ctx context.Context) (model.Basis, error) {
 	}{staged, unstaged, untracked}
 	statusDigest, err := digestJSON(state)
 	if err != nil {
-		return model.Basis{}, err
+		return model.Basis{}, nil, err
 	}
 	workingTreeDigest, err := digestJSON(worktree)
 	if err != nil {
-		return model.Basis{}, err
+		return model.Basis{}, nil, err
 	}
 	return model.Basis{
 		Branch:            branch,
@@ -411,58 +386,104 @@ func (s *scanSession) captureBasis(ctx context.Context) (model.Basis, error) {
 		IndexDigest:       indexDigest,
 		StatusDigest:      statusDigest,
 		WorkingTreeDigest: workingTreeDigest,
-	}, nil
+		ObservedAt:        time.Now().UTC(),
+	}, entries, nil
 }
 
-func (s *scanSession) indexEntries(ctx context.Context) ([]indexEntry, error) {
-	if err := s.verifyVisibleIndex(ctx); err != nil {
-		return nil, err
+// parseStatus reads HEAD and paths from NUL-delimited porcelain v2 without renames.
+// Branch identity is resolved separately with Git's short symbolic ref.
+// Unknown headers are ignored; unexpected entry formats fail closed.
+func parseStatus(output []byte) (model.Basis, error) {
+	basis := model.Basis{Staged: []string{}, Unstaged: []string{}, Untracked: []string{}}
+	headSeen := false
+	for _, record := range bytes.Split(output, []byte{0}) {
+		if len(record) == 0 {
+			continue
+		}
+		if !utf8.Valid(record) {
+			return model.Basis{}, errors.New("Git returned an unsupported path encoding")
+		}
+		line := string(record)
+		switch {
+		case strings.HasPrefix(line, "# branch.oid "):
+			headSeen = true
+			value := strings.TrimPrefix(line, "# branch.oid ")
+			if value != "(initial)" {
+				basis.Head = &value
+			}
+		case strings.HasPrefix(line, "# "):
+			continue
+		case strings.HasPrefix(line, "1 "):
+			fields := strings.SplitN(line, " ", 9)
+			if len(fields) != 9 || len(fields[1]) != 2 || fields[8] == "" {
+				return model.Basis{}, errors.New("Git returned an invalid status entry")
+			}
+			if fields[1][0] != '.' {
+				basis.Staged = append(basis.Staged, fields[8])
+			}
+			if fields[1][1] != '.' {
+				basis.Unstaged = append(basis.Unstaged, fields[8])
+			}
+		case strings.HasPrefix(line, "? ") && len(line) > 2:
+			basis.Untracked = append(basis.Untracked, line[2:])
+		case strings.HasPrefix(line, "u "):
+			return model.Basis{}, errors.New("unmerged index entries are not supported")
+		default:
+			return model.Basis{}, errors.New("Git returned an unsupported status entry")
+		}
 	}
-	output, err := s.runGit(ctx, "ls-files", "--stage", "-z")
+	if !headSeen {
+		return model.Basis{}, errors.New("Git status omitted the HEAD basis")
+	}
+	sort.Strings(basis.Staged)
+	sort.Strings(basis.Unstaged)
+	sort.Strings(basis.Untracked)
+	basis.Staged = unique(basis.Staged)
+	basis.Unstaged = unique(basis.Unstaged)
+	basis.Untracked = unique(basis.Untracked)
+	return basis, nil
+}
+
+func (s *scanSession) indexEntries(ctx context.Context) ([]indexEntry, string, error) {
+	output, err := s.runGit(ctx, "ls-files", "--stage", "-v", "-z")
 	if err != nil {
-		return nil, fmt.Errorf("list tracked files: %w", err)
+		return nil, "", fmt.Errorf("list tracked files: %w", err)
 	}
 	entries := make([]indexEntry, 0)
+	hasher := sha256.New()
 	for _, record := range bytes.Split(output, []byte{0}) {
 		if len(record) == 0 {
 			continue
 		}
-		metadata, pathBytes, found := bytes.Cut(record, []byte{'\t'})
-		if !found || !utf8.Valid(pathBytes) {
-			return nil, errors.New("Git index contains an unsupported path encoding")
-		}
-		fields := strings.Fields(string(metadata))
-		if len(fields) != 3 || fields[2] != "0" {
-			return nil, errors.New("Git index contains an unsupported staged entry")
-		}
-		entries = append(entries, indexEntry{Path: string(pathBytes), Mode: fields[0], OID: fields[1]})
-	}
-	sort.Slice(entries, func(i, j int) bool { return entries[i].Path < entries[j].Path })
-	return entries, nil
-}
-
-func (s *scanSession) verifyVisibleIndex(ctx context.Context) error {
-	output, err := s.runGit(ctx, "ls-files", "-v", "-z")
-	if err != nil {
-		return fmt.Errorf("inspect index visibility: %w", err)
-	}
-	for _, record := range bytes.Split(output, []byte{0}) {
-		if len(record) == 0 {
-			continue
+		if len(record) < 3 || record[1] != ' ' {
+			return nil, "", errors.New("Git index contains an invalid visibility tag")
 		}
 		tag := record[0]
 		if tag == 'S' || tag >= 'a' && tag <= 'z' {
-			return errors.New("assume-unchanged and skip-worktree index entries are not supported because freshness cannot be guaranteed")
+			return nil, "", errors.New("assume-unchanged and skip-worktree index entries are not supported because freshness cannot be guaranteed")
 		}
+		metadata, pathBytes, found := bytes.Cut(record[2:], []byte{'\t'})
+		if !found || !utf8.Valid(pathBytes) {
+			return nil, "", errors.New("Git index contains an unsupported path encoding")
+		}
+		fields := strings.Fields(string(metadata))
+		if len(fields) != 3 || fields[2] != "0" {
+			return nil, "", errors.New("Git index contains an unsupported staged entry")
+		}
+		// Preserve the canonical ls-files --stage -z digest without the tag.
+		hasher.Write(record[2:])
+		hasher.Write([]byte{0})
+		entries = append(entries, indexEntry{Path: string(pathBytes), Mode: fields[0], OID: fields[1]})
 	}
-	return nil
+	sort.Slice(entries, func(i, j int) bool { return entries[i].Path < entries[j].Path })
+	return entries, "sha256:" + hex.EncodeToString(hasher.Sum(nil)), nil
 }
 
-func (r *Repository) scanEntry(ctx context.Context, entry indexEntry, staged, unstaged map[string]struct{}) (model.File, fileObservation, int64, error) {
+func (r *Repository) scanEntry(ctx context.Context, entry indexEntry, staged, unstaged map[string]struct{}) (model.File, int64, error) {
 	fullPath := filepath.Join(r.Root, filepath.FromSlash(entry.Path))
 	info, err := os.Lstat(fullPath)
 	if err != nil && !errors.Is(err, os.ErrNotExist) {
-		return model.File{}, fileObservation{}, 0, fmt.Errorf("inspect %s: %w", entry.Path, err)
+		return model.File{}, 0, fmt.Errorf("inspect %s: %w", entry.Path, err)
 	}
 	exists := err == nil
 	file := model.File{
@@ -473,18 +494,17 @@ func (r *Repository) scanEntry(ctx context.Context, entry indexEntry, staged, un
 		Exists:       exists,
 		WorkingState: workingState(entry.Path, staged, unstaged, exists),
 	}
-	observation := fileObservation{path: fullPath, exists: exists, info: info}
 	if !exists {
 		file.FileType = classifyType(entry.Path, nil, isDocument(entry.Path))
 		file.Language = classifyLanguage(entry.Path)
 		file.Document = isDocument(entry.Path)
-		return file, observation, 0, nil
+		return file, 0, nil
 	}
 	if entry.Mode == "160000" {
 		file.WorkingTreeMode = "160000"
 		file.ContentDigest = "git-object:" + entry.OID
 		file.FileType = "gitlink"
-		return file, observation, 0, nil
+		return file, 0, nil
 	}
 	var contentPrefix []byte
 	var contentDigest string
@@ -492,21 +512,20 @@ func (r *Repository) scanEntry(ctx context.Context, entry indexEntry, staged, un
 	if info.Mode()&os.ModeSymlink != 0 {
 		target, err := os.Readlink(fullPath)
 		if err != nil {
-			return model.File{}, fileObservation{}, 0, fmt.Errorf("read symlink %s: %w", entry.Path, err)
+			return model.File{}, 0, fmt.Errorf("read symlink %s: %w", entry.Path, err)
 		}
 		contentPrefix = []byte(target)
-		observation.symlinkTarget = target
 		file.WorkingTreeMode = "120000"
 		digest := sha256.Sum256(contentPrefix)
 		contentDigest = "sha256:" + hex.EncodeToString(digest[:])
 		sizeBytes = int64(len(contentPrefix))
 	} else {
 		if !info.Mode().IsRegular() {
-			return model.File{}, fileObservation{}, 0, fmt.Errorf("tracked path %s is not a regular file", entry.Path)
+			return model.File{}, 0, fmt.Errorf("tracked path %s is not a regular file", entry.Path)
 		}
-		contentDigest, contentPrefix, sizeBytes, observation.info, err = readStableFile(ctx, fullPath, info)
+		contentDigest, contentPrefix, sizeBytes, _, err = readStableFile(ctx, fullPath, info)
 		if err != nil {
-			return model.File{}, fileObservation{}, 0, fmt.Errorf("read %s: %w", entry.Path, err)
+			return model.File{}, 0, fmt.Errorf("read %s: %w", entry.Path, err)
 		}
 		file.WorkingTreeMode = "100644"
 		if info.Mode().Perm()&0o111 != 0 {
@@ -518,7 +537,7 @@ func (r *Repository) scanEntry(ctx context.Context, entry indexEntry, staged, un
 	file.FileType = classifyType(entry.Path, contentPrefix, isDocument(entry.Path))
 	file.Language = classifyLanguage(entry.Path)
 	file.Document = isDocument(entry.Path)
-	return file, observation, sizeBytes, nil
+	return file, sizeBytes, nil
 }
 
 func readStableFile(ctx context.Context, path string, before os.FileInfo) (string, []byte, int64, os.FileInfo, error) {
@@ -567,55 +586,26 @@ func readStableFile(ctx context.Context, path string, before os.FileInfo) (strin
 	return "sha256:" + hex.EncodeToString(hasher.Sum(nil)), prefix, size, after, nil
 }
 
-func validateObservations(observations []fileObservation) (time.Time, error) {
-	observedAt := time.Now().UTC()
-	for _, observation := range observations {
-		info, err := os.Lstat(observation.path)
-		if errors.Is(err, os.ErrNotExist) && !observation.exists {
-			continue
-		}
-		if err != nil {
-			return time.Time{}, fmt.Errorf("validate %s: %w", observation.path, err)
-		}
-		if !observation.exists || !sameFileInfo(observation.info, info) {
-			return time.Time{}, errors.New("repository file changed during scan")
-		}
-		if info.Mode()&os.ModeSymlink != 0 {
-			target, err := os.Readlink(observation.path)
-			if err != nil {
-				return time.Time{}, fmt.Errorf("validate symlink %s: %w", observation.path, err)
-			}
-			if target != observation.symlinkTarget {
-				return time.Time{}, errors.New("repository symlink changed during scan")
-			}
-		}
-	}
-	return observedAt, nil
-}
-
 func sameFileInfo(before, after os.FileInfo) bool {
 	return os.SameFile(before, after) && before.Size() == after.Size() &&
 		before.Mode() == after.Mode() && before.ModTime().Equal(after.ModTime())
 }
 
-func (s *scanSession) optionalGitValue(ctx context.Context, args ...string) (*string, error) {
-	output, present, err := s.runOptionalGit(ctx, args...)
-	if err != nil {
-		return nil, err
-	}
-	if !present {
-		return nil, nil
-	}
-	value := strings.TrimSpace(string(output))
-	return &value, nil
+func (s *scanSession) runGit(ctx context.Context, args ...string) ([]byte, error) {
+	s.gitCommands++
+	return runGit(ctx, s.repository.Root, args...)
 }
 
-func (s *scanSession) pathList(ctx context.Context, args ...string) ([]string, error) {
-	output, err := s.runGit(ctx, args...)
+func (s *scanSession) diffPaths(ctx context.Context, staged bool) ([]string, error) {
+	args := []string{"diff", "--name-only", "--no-renames", "-z"}
+	if staged {
+		args = append(args, "--cached")
+	}
+	output, err := s.runGit(ctx, append(args, "--")...)
 	if err != nil {
 		return nil, err
 	}
-	paths := make([]string, 0)
+	paths := []string{}
 	for _, raw := range bytes.Split(output, []byte{0}) {
 		if len(raw) == 0 {
 			continue
@@ -627,11 +617,6 @@ func (s *scanSession) pathList(ctx context.Context, args ...string) ([]string, e
 	}
 	sort.Strings(paths)
 	return unique(paths), nil
-}
-
-func (s *scanSession) runGit(ctx context.Context, args ...string) ([]byte, error) {
-	s.gitCommands++
-	return runGit(ctx, s.repository.Root, args...)
 }
 
 func (s *scanSession) runOptionalGit(ctx context.Context, args ...string) ([]byte, bool, error) {

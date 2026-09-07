@@ -47,6 +47,11 @@ all condition contexts before starting an agent. Every report carries the same
 maintenance ID and RepoCue snapshot for that prepared state. Baseline and
 refresh cost are counted once in reuse analysis.
 
+Each individual scan assumes files and Git state stay unchanged until that
+scan returns. The initial Git basis is captured once. Separate checks around
+external agent and oracle execution remain required, because those processes
+can span repository state transitions between scans.
+
 Live Git facts and structural-oracle output are bracketed by snapshot checks.
 The harness stops if the repository no longer matches the maintained snapshot.
 The output directory and temporary workspace parent must be outside the

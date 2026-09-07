@@ -1,6 +1,7 @@
 package app
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -20,8 +21,9 @@ import (
 )
 
 type App struct {
-	stdout io.Writer
-	stderr io.Writer
+	stdout   io.Writer
+	stderr   io.Writer
+	warnings *bytes.Buffer
 }
 
 // command binds one CLI verb to its argument synopsis, one-line summary,
@@ -68,9 +70,12 @@ func init() {
 // Run dispatches the CLI. Help requests (help, -h, --help, help <command>,
 // <command> -h) print plain text to stdout and exit 0; a missing command
 // prints usage to stderr and exits 2; every other failure is a JSON error
-// on stderr with exit 1.
+// on stderr with exit 1. Nonfatal warnings follow the command result so a
+// failure's JSON error remains the first stderr line.
 func Run(ctx context.Context, args []string, stdout, stderr io.Writer) int {
-	application := App{stdout: stdout, stderr: stderr}
+	var warnings bytes.Buffer
+	defer warnings.WriteTo(stderr)
+	application := App{stdout: stdout, stderr: stderr, warnings: &warnings}
 	if len(args) == 0 {
 		application.writeUsage(stderr)
 		return 2
@@ -169,7 +174,7 @@ func (a App) runInit(ctx context.Context, args []string) error {
 	if len(positionals) == 1 {
 		repositoryPath = positionals[0]
 	}
-	repo, err := repository.Open(ctx, repositoryPath)
+	repo, err := a.openRepository(ctx, repositoryPath, *cacheDir)
 	if err != nil {
 		return err
 	}
@@ -199,7 +204,7 @@ func (a App) runStatus(ctx context.Context, args []string) error {
 	if err := requireFlagsOnly(flags); err != nil {
 		return err
 	}
-	repo, err := repository.Open(ctx, *repositoryPath)
+	repo, err := a.openRepository(ctx, *repositoryPath, *cacheDir)
 	if err != nil {
 		return err
 	}
@@ -257,7 +262,7 @@ func (a App) runRefresh(ctx context.Context, args []string) error {
 	if err := requireFlagsOnly(flags); err != nil {
 		return err
 	}
-	repo, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
+	repo, store, err := a.repositoryAndStore(ctx, *repositoryPath, *cacheDir)
 	if err != nil {
 		return err
 	}
@@ -294,7 +299,7 @@ func (a App) runRebaseline(ctx context.Context, args []string) error {
 	if err := requireFlagsOnly(flags); err != nil {
 		return err
 	}
-	repo, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
+	repo, store, err := a.repositoryAndStore(ctx, *repositoryPath, *cacheDir)
 	if err != nil {
 		return err
 	}
@@ -333,7 +338,7 @@ func (a App) runCue(ctx context.Context, args []string) error {
 	if *maxTokens < 1 {
 		return errors.New("max-tokens must be positive")
 	}
-	repo, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
+	repo, store, err := a.repositoryAndStore(ctx, *repositoryPath, *cacheDir)
 	if err != nil {
 		return err
 	}
@@ -407,7 +412,7 @@ func (a App) runMetrics(ctx context.Context, args []string) error {
 	if err := requireFlagsOnly(flags); err != nil {
 		return err
 	}
-	_, store, err := repositoryAndStore(ctx, *repositoryPath, *cacheDir)
+	_, store, err := a.repositoryAndStore(ctx, *repositoryPath, *cacheDir)
 	if err != nil {
 		return err
 	}
@@ -502,8 +507,20 @@ func snapshotFromScan(state model.CurrentState, scan model.Scan) model.Snapshot 
 	}
 }
 
-func repositoryAndStore(ctx context.Context, repositoryPath, cacheDir string) (*repository.Repository, *storage.Store, error) {
-	repo, err := repository.Open(ctx, repositoryPath)
+func (a App) openRepository(ctx context.Context, repositoryPath, cacheDir string) (*repository.Repository, error) {
+	root, err := cacheRoot(cacheDir)
+	if err != nil {
+		return nil, err
+	}
+	repo, warning, err := repository.OpenCached(ctx, repositoryPath, root)
+	if warning != nil {
+		fmt.Fprintf(a.warnings, "warning: %v\n", warning)
+	}
+	return repo, err
+}
+
+func (a App) repositoryAndStore(ctx context.Context, repositoryPath, cacheDir string) (*repository.Repository, *storage.Store, error) {
+	repo, err := a.openRepository(ctx, repositoryPath, cacheDir)
 	if err != nil {
 		return nil, nil, err
 	}
@@ -530,6 +547,14 @@ func openStore(ctx context.Context, repo *repository.Repository, cacheDir string
 }
 
 func statePath(repo *repository.Repository, override string) (string, error) {
+	root, err := cacheRoot(override)
+	if err != nil {
+		return "", err
+	}
+	return filepath.Join(root, repo.ID, "state.db"), nil
+}
+
+func cacheRoot(override string) (string, error) {
 	root := override
 	if root == "" {
 		root = os.Getenv("REPOCUE_CACHE_DIR")
@@ -545,7 +570,7 @@ func statePath(repo *repository.Repository, override string) (string, error) {
 			root = filepath.Join(cache, "repocue")
 		}
 	}
-	return filepath.Join(root, repo.ID, "state.db"), nil
+	return root, nil
 }
 
 func repositoryModel(repo *repository.Repository, created time.Time) model.Repository {

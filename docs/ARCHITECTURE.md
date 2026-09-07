@@ -30,10 +30,8 @@ be distributed in the RepoCue executable.
 ```text
 CLI request
   -> discover Git repository
-  -> capture Git basis
+  -> capture Git basis once (repository remains unchanged during the scan)
   -> scan all tracked files or changed tracked files
-  -> verify the Git index, Git basis, and scanned filesystem observations
-     remained coherent during the scan
   -> commit epoch, snapshot, file state, delta, and run metrics in one SQLite transaction
   -> project deterministic JSON
 ```
@@ -71,12 +69,64 @@ RepoCue could not claim current freshness.
 
 ## Transaction Boundary
 
-Repository scanning happens before the SQLite write transaction. RepoCue
-captures the Git index and basis around a scan, validates scanned filesystem
-observations at a defined observation point, and rejects the result when those
-observations are not coherent. The database transaction then verifies the
-expected current snapshot before publishing the new snapshot. An interrupted
-write therefore cannot leave a partially-current snapshot.
+Repository scanning happens before the SQLite write transaction. Files and Git
+state must remain unchanged for the duration of each scan. The scanner captures
+one Git basis and records its initial observation time; it does not recapture
+the basis after scanning or revisit every scanned path. Regular-file reads
+retain their local before/after metadata check, but this is not a guarantee
+against repository-wide concurrent mutation.
+
+The database transaction verifies the expected current snapshot before
+publishing the new snapshot. An interrupted write therefore cannot leave a
+partially-current snapshot. Changes between scans are still detected by a new
+Git basis and changed-file scan. After a concurrent filesystem edit, rerun
+refresh when the repository is idle.
+
+Each full or incremental scan normally uses three Git commands: porcelain v2
+status supplies HEAD and changed paths; `symbolic-ref --quiet --short HEAD`
+supplies the branch; one tagged index listing supplies file entries, the index
+digest, visibility flags, and conflict checks.
+The index digest preserves the untagged `ls-files --stage -z` byte format, so
+existing snapshots remain comparable. Branch identity preserves Git's short
+symbolic-ref format, including `heads/main` when a `main` tag creates ambiguity.
+A branch literally named `(detached)` remains distinct from detached HEAD.
+Status disables optional index writes.
+
+CLI repository discovery normally adds one call. At an ordinary repository
+root, a valid location hint removes that call: `status`, `refresh`, or an
+overview `cue` then uses three calls instead of four. A gitlink requires two
+additional diff queries to preserve configuration-sensitive submodule behavior.
+A repository or Git-directory path
+containing a newline requires two additional discovery queries because
+`rev-parse` does not delimit its path output with NUL. Counts cover Git processes
+invoked by RepoCue, not additional children started internally by Git. Ranked
+cues and evaluation may perform additional context and state checks.
+
+## CLI Location Cache
+
+The CLI stores a disposable `location.json` next to `state.db`, under the same
+cache-root selection rules. It is written only after Git confirms that the
+requested path is the ordinary repository root with a real `.git` directory.
+Reuse checks the canonical root, Git-directory metadata, local configuration
+and HEAD contents, and Git executable path/metadata. It never reuses a branch,
+HEAD value, dirty-state answer, or freshness result; scans still query live Git.
+
+Missing, malformed, oversized, or mismatched hints cause a new Git discovery.
+Moves produce a different root identity; changed local configuration or Git
+layout invalidates reuse. Subdirectory requests, linked worktrees, separate Git
+directories, configuration includes/extensions, explicit worktree configuration,
+and Git environment overrides retain Git discovery. Trace and pager variables
+do not disable reuse. Eligibility is conservative rather than a second Git
+configuration parser. The direct repository API and evaluation harness remain
+uncached.
+
+Hint replacement uses a private temporary file and rename. Read failures are
+cache misses; write failures produce a warning on stderr while the successful
+Git discovery remains usable. Warnings are buffered until command completion;
+if the command fails, its JSON error precedes any warning. The hint is not
+canonical state, does not change the SQLite schema, and may be removed without
+losing snapshots. Its file reads and discovery cost are outside the existing
+scan-only metrics.
 
 ## Evaluation Boundary
 

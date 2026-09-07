@@ -60,6 +60,20 @@ Except for the optional path accepted by `init`, state commands accept flags
 only. Use `--repository PATH` where applicable and `--cache-dir PATH` to
 override the normal cache location.
 
+At an ordinary repository root, the CLI reuses a validated `location.json`
+beside the SQLite database. A warm overview `cue`, `status`, or `refresh` needs
+three Git calls; a missing or changed location hint requires discovery again.
+Subdirectories, linked worktrees, and special Git configuration use the normal
+discovery path. Location-cache write failures warn on stderr after the command
+result without changing the JSON result or canonical snapshot state. If the
+command fails, its JSON error remains the first stderr line, followed by the
+warning.
+
+Keep files and Git state unchanged while a command scans the repository.
+RepoCue captures the scan's Git basis once, including when `status` or `cue`
+checks freshness. If an editor or another process writes during the scan,
+rerun `refresh` after it finishes before relying on the result.
+
 ---
 
 ## Cues

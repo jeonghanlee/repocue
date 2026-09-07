@@ -246,6 +246,123 @@ func TestHelpPaths(t *testing.T) {
 	}
 }
 
+func TestStateCommandsUseThreeGitCallsWithCachedLocation(t *testing.T) {
+	repository := createGitRepository(t)
+	cache := t.TempDir()
+	runCLI(t, "init", "--cache-dir", cache, repository)
+	for _, command := range []string{"status", "refresh", "cue"} {
+		t.Run(command, func(t *testing.T) {
+			tracePath := filepath.Join(t.TempDir(), "git.trace")
+			t.Setenv("GIT_TRACE", tracePath)
+			result := runCLI(t, command, "--cache-dir", cache, "--repository", repository)
+			trace, err := os.ReadFile(tracePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if calls := strings.Count(string(trace), "built-in: git "); calls != 3 {
+				t.Fatalf("%s used %d Git calls, want 3: %s", command, calls, trace)
+			}
+			if result["snapshot"] != "snapshot-000001" {
+				t.Fatalf("%s changed the snapshot: %#v", command, result)
+			}
+		})
+	}
+}
+
+func TestLocationCacheWarningPreservesStatus(t *testing.T) {
+	repository, cache := createGitRepository(t), t.TempDir()
+	runCLI(t, "init", "--cache-dir", cache, repository)
+	status := runCLI(t, "status", "--cache-dir", cache, "--repository", repository)
+	hint := filepath.Join(filepath.Dir(status["database"].(string)), "location.json")
+	if err := os.Rename(hint, hint+".saved"); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.Mkdir(hint, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	stdout, stderr, code := runRaw("status", "--cache-dir", cache, "--repository", repository)
+	if code != 0 || !strings.Contains(stderr, "warning: repository location cache was not saved") {
+		t.Fatalf("status did not preserve discovery with a cache warning: code=%d stderr=%q", code, stderr)
+	}
+	var result map[string]any
+	if err := json.Unmarshal([]byte(stdout), &result); err != nil || result["snapshot"] != status["snapshot"] ||
+		result["freshness"] != "current" {
+		t.Fatalf("cache failure affected canonical state: result=%#v error=%v", result, err)
+	}
+}
+
+func TestLocationCacheWarningFollowsJSONError(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		args []string
+		want string
+	}{
+		{name: "budget too small", args: []string{"cue", "--max-tokens", "1"}, want: "token budget is too small"},
+		{name: "unsupported view", args: []string{"cue", "--view", "invalid"}, want: "unsupported cue view"},
+		{name: "already initialized", args: []string{"init"}, want: "already initialized"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			repository, cache := createGitRepository(t), t.TempDir()
+			runCLI(t, "init", "--cache-dir", cache, repository)
+			status := runCLI(t, "status", "--cache-dir", cache, "--repository", repository)
+			hint := filepath.Join(filepath.Dir(status["database"].(string)), "location.json")
+			if err := os.Rename(hint, hint+".saved"); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.Mkdir(hint, 0o700); err != nil {
+				t.Fatal(err)
+			}
+			args := append(append([]string{}, test.args...), "--cache-dir", cache)
+			if test.args[0] == "init" {
+				args = append(args, repository)
+			} else {
+				args = append(args, "--repository", repository)
+			}
+			stdout, stderr, code := runRaw(args...)
+			if code != 1 || stdout != "" {
+				t.Fatalf("failure returned code=%d stdout=%q stderr=%q", code, stdout, stderr)
+			}
+			first, remaining, _ := strings.Cut(stderr, "\n")
+			var failure map[string]any
+			if err := json.Unmarshal([]byte(first), &failure); err != nil || failure["kind"] != "error" ||
+				failure["schema_version"] != "repocue/1" || !strings.Contains(first, test.want) {
+				t.Fatalf("first stderr line is not the command's JSON error: %q, decode error=%v", first, err)
+			}
+			if !strings.HasPrefix(remaining, "warning: repository location cache was not saved:") {
+				t.Fatalf("cache warning missing after the JSON error: %q", remaining)
+			}
+			after := runCLI(t, "status", "--cache-dir", cache, "--repository", repository)
+			if after["snapshot"] != status["snapshot"] || after["freshness"] != status["freshness"] {
+				t.Fatalf("failed command changed canonical state: before=%#v after=%#v", status, after)
+			}
+		})
+	}
+}
+
+func TestBranchNamedDetachedTracksDetachment(t *testing.T) {
+	repository, cache := createGitRepository(t), t.TempDir()
+	runGit(t, repository, "switch", "-c", "(detached)")
+	initialized := runCLI(t, "init", "--cache-dir", cache, repository)
+	if branch := initialized["basis"].(map[string]any)["branch"]; branch != "(detached)" {
+		t.Fatalf("attached branch was reported as %v", branch)
+	}
+	noOp := runCLI(t, "refresh", "--cache-dir", cache, "--repository", repository)
+	if noOp["changed"] != false || noOp["snapshot"] != initialized["snapshot"] {
+		t.Fatalf("unchanged attached branch created a snapshot: %#v", noOp)
+	}
+	runGit(t, repository, "switch", "--detach")
+	detached := runCLI(t, "refresh", "--cache-dir", cache, "--repository", repository)
+	if detached["changed"] != true || detached["snapshot"] == initialized["snapshot"] ||
+		detached["basis"].(map[string]any)["branch"] != nil {
+		t.Fatalf("detachment was not recorded: %#v", detached)
+	}
+	runGit(t, repository, "switch", "(detached)")
+	attached := runCLI(t, "refresh", "--cache-dir", cache, "--repository", repository)
+	if attached["changed"] != true || attached["basis"].(map[string]any)["branch"] != "(detached)" {
+		t.Fatalf("reattachment was not recorded: %#v", attached)
+	}
+}
+
 func TestFlagOnlyCommandsRejectPositionalArguments(t *testing.T) {
 	for _, name := range []string{"status", "refresh", "rebaseline", "cue", "metrics"} {
 		stdout, stderr, code := runRaw(name, "unexpected")

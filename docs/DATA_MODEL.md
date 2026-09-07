@@ -31,11 +31,20 @@ epoch and keeps the preceding epoch as `superseded`.
 Sequence values are allocated transactionally and stored as explicit text
 identifiers. SQLite internal row IDs are not part of the public model.
 
+The CLI may keep a versioned `location.json` beside `state.db`. This disposable
+hint contains the verified root, Git directory, and a validation digest, not
+snapshot data. It does not alter the SQLite schema or identity rules and is
+not included in the SQLite database-size measurement.
+
 ## Snapshot Basis
 
 Each snapshot stores branch, HEAD, staged paths, unstaged paths, untracked
 paths, dirty state, a Git-state digest, a repository file-state digest, and an
 observation time. HEAD and working-tree state remain separate.
+
+The observation time identifies the initial Git basis capture. Repository
+files and Git state are assumed unchanged during each scan. This assumption
+does not weaken the SQLite transaction or expected-current-snapshot checks.
 
 ## File State
 

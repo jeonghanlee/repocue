@@ -9,11 +9,13 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
+	"reflect"
 	"slices"
 	"strings"
 	"testing"
 	"time"
+
+	"github.com/jeonghanlee/repocue/internal/model"
 )
 
 func TestReadStableFileStreamsDigestAndBoundedPrefix(t *testing.T) {
@@ -233,79 +235,93 @@ func TestFullScanRejectsAssumeUnchanged(t *testing.T) {
 	}
 }
 
-func TestFullScanRejectsFileChangedAfterItWasRead(t *testing.T) {
-	if runtime.GOOS != "linux" {
-		t.Skip("the test observes the real scanner file descriptor through procfs")
-	}
-	root := t.TempDir()
-	runFixtureGit(t, root, "init", "-b", "main")
-	runFixtureGit(t, root, "config", "user.name", "RepoCue Test")
-	runFixtureGit(t, root, "config", "user.email", "repocue@example.invalid")
-	linkPath := filepath.Join(root, "a-link")
-	largePath := filepath.Join(root, "z.bin")
-	if err := os.Symlink("initial", linkPath); err != nil {
-		t.Fatal(err)
-	}
-	large, err := os.Create(largePath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	if err := large.Truncate(32 << 20); err != nil {
-		large.Close()
-		t.Fatal(err)
-	}
-	if err := large.Close(); err != nil {
-		t.Fatal(err)
-	}
-	runFixtureGit(t, root, "add", "a-link", "z.bin")
-	runFixtureGit(t, root, "commit", "-m", "Initialize fixture")
-	if err := os.Remove(linkPath); err != nil {
-		t.Fatal(err)
-	}
-	if err := os.Symlink("first", linkPath); err != nil {
-		t.Fatal(err)
-	}
-	repository, err := Open(context.Background(), root)
-	if err != nil {
-		t.Fatal(err)
-	}
-	mutation := make(chan error, 1)
-	go mutateWhenOpen(largePath, linkPath, mutation)
-	_, scanErr := repository.FullScan(context.Background())
-	if err := <-mutation; err != nil {
-		t.Fatal(err)
-	}
-	if scanErr == nil {
-		t.Fatal("scan accepted a repository file changed after its content was read")
-	}
-}
-
-func mutateWhenOpen(watchedPath, linkPath string, result chan<- error) {
-	deadline := time.Now().Add(5 * time.Second)
-	for time.Now().Before(deadline) {
-		entries, err := os.ReadDir("/proc/self/fd")
-		if err != nil {
-			result <- err
-			return
-		}
-		for _, entry := range entries {
-			target, err := os.Readlink(filepath.Join("/proc/self/fd", entry.Name()))
+func TestScansCaptureGitBasisOnce(t *testing.T) {
+	for _, test := range []struct {
+		name        string
+		full        bool
+		modified    bool
+		staged      bool
+		wantScanned int
+	}{
+		{name: "full clean", full: true, wantScanned: 1},
+		{name: "full dirty", full: true, modified: true, wantScanned: 1},
+		{name: "incremental no-op"},
+		{name: "incremental modified", modified: true, wantScanned: 1},
+		{name: "incremental staged", modified: true, staged: true, wantScanned: 1},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			runFixtureGit(t, root, "init", "-b", "main")
+			runFixtureGit(t, root, "config", "user.name", "RepoCue Test")
+			runFixtureGit(t, root, "config", "user.email", "repocue@example.invalid")
+			path := filepath.Join(root, "README.md")
+			content := []byte("# Initial\n")
+			if err := os.WriteFile(path, content, 0o644); err != nil {
+				t.Fatal(err)
+			}
+			runFixtureGit(t, root, "add", "README.md")
+			runFixtureGit(t, root, "commit", "-m", "Initialize fixture")
+			repo, err := Open(context.Background(), root)
 			if err != nil {
-				continue
+				t.Fatal(err)
 			}
-			if target != watchedPath {
-				continue
+			previous, err := repo.FullScan(context.Background())
+			if err != nil {
+				t.Fatal(err)
 			}
-			if err := os.Remove(linkPath); err != nil {
-				result <- err
-				return
+			if test.modified {
+				content = []byte("# Changed between scans\n")
+				if err := os.WriteFile(path, content, 0o644); err != nil {
+					t.Fatal(err)
+				}
 			}
-			result <- os.Symlink("second", linkPath)
-			return
-		}
-		runtime.Gosched()
+			if test.staged {
+				runFixtureGit(t, root, "add", "README.md")
+			}
+			tracePath := filepath.Join(t.TempDir(), "git.trace")
+			t.Setenv("GIT_TRACE", tracePath)
+			started := time.Now().UTC()
+			var scan model.Scan
+			if test.full {
+				scan, err = repo.FullScan(context.Background())
+			} else {
+				scan, err = repo.IncrementalScan(context.Background(), previous.Files)
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			finished := time.Now().UTC()
+			trace, err := os.ReadFile(tracePath)
+			if err != nil {
+				t.Fatal(err)
+			}
+			calls := strings.Count(string(trace), "built-in: git ")
+			if calls != scan.Metrics.GitCommands || calls != 3 ||
+				strings.Count(string(trace), "git status --porcelain=v2 --branch") != 1 {
+				t.Fatalf("scan repeated its Git basis: calls=%d metrics=%d trace=%s", calls, scan.Metrics.GitCommands, trace)
+			}
+			if scan.Basis.ObservedAt.Before(started) || scan.Basis.ObservedAt.After(finished) {
+				t.Fatalf("basis observation is outside the scan interval: %v", scan.Basis.ObservedAt)
+			}
+			wantHash := sha256.Sum256(content)
+			wantBytes := int64(0)
+			if test.wantScanned > 0 {
+				wantBytes = int64(len(content))
+			}
+			if scan.Basis.Dirty != test.modified || scan.Metrics.FilesScanned != test.wantScanned ||
+				scan.Metrics.BytesScanned != wantBytes || len(scan.Files) != 1 ||
+				scan.Files[0].ContentDigest != "sha256:"+hex.EncodeToString(wantHash[:]) {
+				t.Fatalf("unexpected single-basis scan: %#v", scan)
+			}
+			if test.staged && !slices.Equal(scan.Basis.Staged, []string{"README.md"}) {
+				t.Fatalf("staged change missing from basis: %#v", scan.Basis)
+			}
+			if !test.full && !test.modified && (!reflect.DeepEqual(scan.Files, previous.Files) ||
+				scan.RepositoryDigest != previous.RepositoryDigest || !scan.Basis.SameState(previous.Basis)) {
+				t.Fatal("no-op incremental scan changed repository state")
+			}
+		})
 	}
-	result <- errors.New("scanner did not open the watched file before the deadline")
 }
 
 func runFixtureGit(t *testing.T, root string, args ...string) {

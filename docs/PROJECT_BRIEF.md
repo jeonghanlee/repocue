@@ -1811,8 +1811,20 @@ interrupted refresh
 ```
 
 A failed or interrupted refresh must not expose a partially-current snapshot.
-Filesystem and Git observations used by a published snapshot must be coherent
-at the recorded observation point.
+
+Scan operating assumption (Decision Date: 2026-09-06): the repository's files
+and Git state remain unchanged for the duration of each scan. A scan captures
+its Git basis once before reading files; it does not repeat repository-wide
+Git or filesystem checks to detect concurrent mutations. `observed_at` records
+that initial basis capture. Freshness is conditional on this assumption.
+Changes between separate scans remain detectable. If another process writes
+during a scan, rerun refresh after it finishes; the scan does not guarantee
+that such a mutation will be rejected.
+
+SQLite transactions and expected-current-snapshot checks still protect
+publication against failed writes and concurrent RepoCue state transitions.
+Evaluation still checks repository state before and after each agent run;
+the scan assumption does not permit an agent to modify the repository.
 
 ### 43.2 Evaluation Harness
 
