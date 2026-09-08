@@ -30,10 +30,11 @@ including disambiguated names when branches and tags share a name.
 
 ## Next Milestone
 
-M3 local M1 is Complete in
+M3 local M1 and M3 are Complete in
 [milestone-10a4f02.md](milestone-10a4f02.md), with independent implementation
-and closure acceptance. Commit `a8f650c` matches fetched `origin/master` as
-observed on 2026-09-08 UTC. The implementation adds calibration import,
+and closure acceptance. Reporting landed in `a8f650c`; the token correction
+landed in `8d61f6e`, which matches `origin/master` and GitHub master as observed
+on 2026-09-08 UTC. The implementation adds calibration import,
 stdout-only JSON/Markdown reports, content-sensitive evidence, and schema-3
 references. Reports separate recorded maintenance from paired future-consumer
 estimates and never launch an agent.
@@ -64,12 +65,13 @@ A report set produced by the pre-change CLI was imported unchanged; producer
 incompatibility still correctly prevents using it for projections. Full
 tests, race, vet, tidy, static Linux and Windows builds, and mdBook passed;
 independent correction and final second-person review were accepted with no
-remaining finding. Local M3 remains In progress pending Git landing.
+remaining finding. These verification results remain dated 2026-09-08 UTC;
+the status update does not represent a new product test run.
 
-The correction is uncommitted, and no real model run is authorized. Current
-sandbox access also prevents writing the local RepoCue cache. M2 remains
-Blocked on completion of the correction and G1 approval; see the canonical
-M2 preflight for the remaining measurement conditions.
+No real model run is authorized. Writable local cache access remains a
+measurement preflight requirement; the earlier read-only sandbox observation
+has not been resolved. M2 remains Blocked on G1 approval; see the canonical
+M2 preflight and G1 for the remaining measurement conditions and cost checkpoint.
 
 ## Deferred Scope
 

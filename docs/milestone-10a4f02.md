@@ -15,7 +15,7 @@ Canonical branch or ref: master
 Git upstream: origin/master
 Remote tracker: none
 
-Next session entry point: obtain separate authorization for Git landing of the verified M3 correction, then resolve G1 for the draft direct/basic calibration conditions and cost checkpoint. M1 is Complete; M2 remains Blocked and no real-agent run is authorized.
+Next session entry point: resolve G1 for the exact direct/basic calibration basis, conditions, evidence location, and first-pair cost checkpoint. M1 and M3 are Complete; M2 remains Blocked and no real-agent run is authorized.
 
 ## Milestone
 
@@ -25,7 +25,7 @@ Next session entry point: obtain separate authorization for Git landing of the v
 | --- | --- | --- | --- | --- | --- | --- | --- |
 | M3 | M1 | Quantitative savings report contracts and implementation | Milestone | Complete | No | D1-D23 | Landed in a8f650c; the CLI imports a validated calibration, separates observed maintenance from projected savings, and passes M1 / T1-T22; [detail](#m1---quantitative-savings-report-contracts-and-implementation) |
 | M3 | M2 | Initial repository calibration and report | Milestone | Blocked | No | M1, M3, G1 | At least three controlled direct/basic pairs produce a reproducible calibration and first report without modifying the evaluated repository; [detail](#m2---initial-repository-calibration-and-report) |
-| M3 | M3 | Token usage absence and report compatibility | Milestone | In progress | No | M1, D2, D14, D24 | Missing counters remain unavailable; v4 execution and unchanged v3 reads pass real-path checks and land in Git; [detail](#m3---token-usage-absence-and-report-compatibility) |
+| M3 | M3 | Token usage absence and report compatibility | Milestone | Complete | No | M1, D2, D14, D24 | Landed in 8d61f6e; missing counters remain unavailable; v4 execution and unchanged v3 reads pass M3 / T1-T4; [detail](#m3---token-usage-absence-and-report-compatibility) |
 | M3 | G1 | Calibration evidence authorization | External gate | Open | No | | The User authorizes either a verified retained report set or the cost and conditions of new Codex runs; [detail](#g1---calibration-evidence-authorization) |
 
 ### Decisions
@@ -807,7 +807,7 @@ result, or selection of a structural backend.
 
 ##### Dependencies And Decisions
 
-- M1 and the M3 token correction must be Complete.
+- M1 and the M3 token correction are Complete in `a8f650c` and `8d61f6e`.
 - G1 must be Complete; resume as Not started after all dependencies complete.
 - If retained source reports cannot be verified, G1 requires a separate cost
   estimate and User authorization for new Codex runs.
@@ -867,6 +867,10 @@ Observed on 2026-09-08 UTC at implementation commit `a8f650c`:
 These preparation checks do not complete M2 / T1-T4. The owner authorized the
 bounded M3 token correction separately; G1 still excludes new Codex runs.
 
+The correction subsequently landed in `8d61f6e` on 2026-09-08 UTC; M3's
+completion evidence is recorded below. That resolves the token-correction
+prerequisite, not G1 authorization or the writable-cache preflight.
+
 ##### Test Plan
 
 | Label | Layer | Method | Environment | Expected Result |
@@ -904,7 +908,7 @@ Last Compared: never
 Origin: 10a4f02 / M3
 Identity History: none
 GitHub Issue: none
-Status: In progress
+Status: Complete
 
 ##### Summary
 
@@ -937,8 +941,8 @@ or retained report bytes.
 
 M1 supplies the reporting path. D2, D14, and D24 define measurement presence
 and version compatibility. G1 is not needed for local fixture verification;
-it remains required for real calibration. Git publication needs separate
-authorization and has not occurred.
+it remains required for real calibration. The separately authorized commit
+and push completed on 2026-09-08 UTC.
 
 ##### Implementation Plan
 
@@ -988,9 +992,21 @@ No actual agent token savings or Codex 0.153.4 usage coverage was measured.
 
 ##### Closure Evidence
 
-Independent correction verification and second-person review were accepted on
-2026-09-08 UTC. No Git landing or real calibration has occurred, so M3 remains
-In progress; M1's completed status is unchanged.
+- Complete: 2026-09-08 UTC. Required T1-T4 results and independent correction,
+  second-person, and closure acceptance are recorded; Git publication is
+  complete. M1 remains Complete.
+- Commit: `8d61f6e65ab01ebbaef90ea2e6352b87235e195d`,
+  `Preserve missing token measurements across evaluation reports`; 17
+  implementation, test, contract, and documentation files. The separately
+  authorized commit and non-forced push completed.
+- Publication rechecked on 2026-09-08 UTC: local `HEAD`, `origin/master`, and
+  GitHub `refs/heads/master` resolve to that commit. The working tree was clean
+  before this status-only update. Recheck with `git rev-parse HEAD origin/master`,
+  `git ls-remote --exit-code origin refs/heads/master`, and `git status --short --branch`.
+- Product verification above remains dated 2026-09-08; it is not a new test run
+  for this status update. No real calibration has occurred; M2 remains Blocked
+  on G1. Whole-session closure, removal, and new Git publication are not
+  authorized by this status update.
 
 #### G1 - Calibration Evidence Authorization
 
@@ -1015,7 +1031,7 @@ The initial corpus is RepoCue only; no other local repository is included.
 | --- | --- |
 | Repository | The current RepoCue checkout; all six runs and local binding use the same root |
 | Basis | A clean master commit containing accepted M1 and any separately accepted adapter correction; exact full SHA and content-sensitive fingerprint must be recorded before approval |
-| Reference implementation | `a8f650cc8950015b22a7873001ef72234ea3cf3c`; the current uncommitted correction and documentation are not a frozen measurement basis |
+| Reference implementation | `8d61f6e65ab01ebbaef90ea2e6352b87235e195d`; contains accepted M1 and M3; the exact measurement basis still requires G1 approval |
 | Runs | Three direct/basic pairs, six fresh ephemeral executions, one pair at a time |
 | Codex | Pin the observed `0.153.4`; recheck before execution and stop on drift |
 | Model and reasoning | `gpt-5.6-luna`, `medium`; no model substitution or automatic retry |
