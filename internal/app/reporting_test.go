@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"runtime"
 	"slices"
 	"strings"
 	"sync"
@@ -19,6 +20,7 @@ import (
 
 	"github.com/jeonghanlee/repocue/docs/schema"
 	"github.com/jeonghanlee/repocue/internal/benchmark"
+	"github.com/jeonghanlee/repocue/internal/codexadapter"
 	"github.com/jeonghanlee/repocue/internal/evaluation"
 	"github.com/jeonghanlee/repocue/internal/evidence"
 	"github.com/jeonghanlee/repocue/internal/reporting"
@@ -69,7 +71,7 @@ func TestReportingRunnerBoundary(t *testing.T) {
 			ExecutionDurationMS: &duration, CommandExecutions: &zero, GitCalls: &zero, RepositoryFilesNamed: &zero, Statuses: map[string]string{
 				"input_tokens": "observed", "cached_input_tokens": "observed", "output_tokens": "observed", "reasoning_output_tokens": "observed", "total_tokens": "derived",
 				"execution_duration_ms": "observed", "command_executions": "observed", "git_calls": "derived", "repository_files_named": "derived"}},
-		UsageEvents: []evaluation.UsageEvent{{Turn: 1, InputTokens: input, OutputTokens: output}}, TokenizerCounts: []evaluation.TokenizerCount{}, Commands: []evaluation.CommandObservation{},
+		UsageEvents: []evaluation.UsageEvent{{Turn: 1, InputTokens: &input, CachedInputTokens: &zero, OutputTokens: &output, ReasoningOutputTokens: &zero}}, TokenizerCounts: []evaluation.TokenizerCount{}, Commands: []evaluation.CommandObservation{},
 		FinalResponse: answer, Findings: []evaluation.ContextFinding{}, Limitations: []string{"synthetic external fixture, not real agent measurements"},
 	}
 	if err := json.NewEncoder(os.Stdout).Encode(observation); err != nil {
@@ -119,6 +121,181 @@ func TestReportingEstimatedAgentCostsStayDiagnostic(t *testing.T) {
 				t.Fatal("excluded estimate erased an unrelated observed zero")
 			}
 		})
+	}
+}
+
+// TestReportingCodexBoundary replaces only the external Codex process. Its
+// JSONL passes through the shipped adapter, evaluator, importer, and report.
+func TestReportingCodexBoundary(t *testing.T) {
+	if os.Getenv("REPOCUE_TEST_CODEX_BOUNDARY") != "1" {
+		return
+	}
+	answer, err := os.ReadFile(os.Getenv("REPOCUE_TEST_ANSWER_FILE"))
+	if err != nil {
+		os.Exit(51)
+	}
+	if _, err := os.ReadFile("README.md"); err != nil {
+		os.Exit(52)
+	}
+	encoder := json.NewEncoder(os.Stdout)
+	for _, event := range []any{
+		map[string]any{"type": "item.completed", "item": map[string]string{"type": "command_execution", "command": "cat README.md"}},
+		map[string]any{"type": "item.completed", "item": map[string]string{"type": "agent_message", "text": string(answer)}},
+	} {
+		if err := encoder.Encode(event); err != nil {
+			os.Exit(53)
+		}
+	}
+	input := "1000"
+	if os.Getenv("REPOCUE_EVAL_CONDITION") == evaluation.ConditionBasic {
+		input = "100"
+	}
+	usage := strings.ReplaceAll(os.Getenv("REPOCUE_TEST_CODEX_USAGE"), "INPUT", input)
+	if _, err := fmt.Fprintln(os.Stdout, usage); err != nil {
+		os.Exit(54)
+	}
+	os.Exit(0)
+}
+
+func TestReportingCodexUsageThroughShippedPipeline(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("the external Codex fixture is a POSIX executable")
+	}
+	f := prepareReportingFixture(t)
+	adapter := filepath.Join(f.external, "codex-runner")
+	build := exec.Command("go", "build", "-o", adapter, "./cmd/repocue-codex-runner")
+	build.Dir = filepath.Join("..", "..")
+	build.Env = append(os.Environ(), "CGO_ENABLED=0")
+	if output, err := build.CombinedOutput(); err != nil {
+		t.Fatalf("build adapter: %v: %s", err, output)
+	}
+	testExecutable, err := os.Executable()
+	if err != nil {
+		t.Fatal(err)
+	}
+	codex := filepath.Join(f.external, "codex")
+	quoted := "'" + strings.ReplaceAll(testExecutable, "'", "'\\''") + "'"
+	writeFile(t, codex, "#!/bin/sh\nset -eu\nif test \"$1\" = \"--version\"; then printf '%s\\n' 'codex-cli fixture'; exit 0; fi\ntest \"$1\" = \"exec\"\ncat >/dev/null\nREPOCUE_TEST_CODEX_BOUNDARY=1\nexport REPOCUE_TEST_CODEX_BOUNDARY\nexec "+quoted+" -test.run=^TestReportingCodexBoundary$\n")
+	if err := os.Chmod(codex, 0o700); err != nil {
+		t.Fatal(err)
+	}
+	answerSchema, err := filepath.Abs(filepath.Join("..", "..", "docs", "schema", "benchmark-answer-v2.schema.json"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("REPOCUE_CODEX_BIN", codex)
+	t.Setenv("REPOCUE_CODEX_MODEL", "synthetic-codex-fixture")
+	t.Setenv("REPOCUE_CODEX_REASONING_EFFORT", "medium")
+	t.Setenv("REPOCUE_CODEX_OUTPUT_SCHEMA_FILE", answerSchema)
+	repo, err := repository.Open(context.Background(), f.root)
+	if err != nil {
+		t.Fatal(err)
+	}
+	before, err := repo.CaptureEvidence(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	for index, test := range []struct {
+		name      string
+		usage     string
+		unknown   []string
+		zeroInput bool
+	}{
+		{"omitted reasoning", `{"type":"turn.completed","usage":{"input_tokens":INPUT,"cached_input_tokens":0,"output_tokens":10}}`, []string{"reasoning_output_tokens"}, false},
+		{"null subsets", `{"type":"turn.completed","usage":{"input_tokens":INPUT,"cached_input_tokens":null,"output_tokens":10,"reasoning_output_tokens":null}}`, []string{"cached_input_tokens", "reasoning_output_tokens"}, false},
+		{"partial input", "{\"type\":\"turn.completed\",\"usage\":{\"input_tokens\":INPUT,\"cached_input_tokens\":0,\"output_tokens\":10,\"reasoning_output_tokens\":0}}\n{\"type\":\"turn.completed\",\"usage\":{\"cached_input_tokens\":0,\"output_tokens\":2,\"reasoning_output_tokens\":0}}", []string{"input_tokens", "total_tokens"}, false},
+		{"absent usage", `{"type":"turn.completed"}`, []string{"input_tokens", "cached_input_tokens", "output_tokens", "reasoning_output_tokens", "total_tokens"}, false},
+		{"explicit zero", `{"type":"turn.completed","usage":{"input_tokens":0,"cached_input_tokens":0,"output_tokens":0,"reasoning_output_tokens":0}}`, nil, true},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			t.Setenv("REPOCUE_TEST_CODEX_USAGE", test.usage)
+			out := filepath.Join(t.TempDir(), "sets")
+			data := fixtureCLI(t, f, "evaluate-m2", "--repository", f.root, "--conditions", "direct,basic", "--max-tokens", "500", "--runner", adapter,
+				"--task-file", f.answer, "--run-index", fmt.Sprint(index+1), "--output-directory", out)
+			var manifest evaluation.M2Manifest
+			if err := json.Unmarshal(data, &manifest); err != nil {
+				t.Fatal(err)
+			}
+			if manifest.SchemaVersion != evaluation.M2SchemaVersion || len(manifest.Reports) != 2 {
+				t.Fatal("invalid current report set")
+			}
+			for _, report := range manifest.Reports {
+				if report.Runner.SchemaVersion != evaluation.M2RunnerSchemaVersion || report.Runner.Metadata.AdapterVersion != codexadapter.AdapterVersion || report.Runner.Metadata.Adapter != "codex-cli" {
+					t.Fatal("shipped Codex adapter was not used")
+				}
+			}
+			sets, err := os.ReadDir(out)
+			if err != nil || len(sets) != 1 {
+				t.Fatalf("published sets: %v %v", sets, err)
+			}
+			reports := filepath.Join(out, sets[0].Name())
+			id := fixtureImport(t, f, reports, filepath.Join(reports, "calibration-evidence.json"))
+			result := fixtureReport(t, f, "--profile", id)
+			if result.Applicability.Status != "measured_reference" || len(result.Calibration.Pairs) != 1 {
+				t.Fatal("current profile is not applicable")
+			}
+			for _, sample := range []reporting.Sample{result.Calibration.Pairs[0].Direct, result.Calibration.Pairs[0].Basic} {
+				if sample.Correctness.Ratio == nil || *sample.Correctness.Ratio != 1 {
+					t.Fatal("usage absence erased deterministic correctness")
+				}
+				for _, name := range []string{"input_tokens", "cached_input_tokens", "output_tokens", "reasoning_output_tokens", "total_tokens", "command_executions", "execution_duration_ms"} {
+					metric := sample.Metrics[name]
+					if slices.Contains(test.unknown, name) {
+						if metric.Value != nil || metric.Status != "not_observed" {
+							t.Fatalf("%s became observed: %+v", name, metric)
+						}
+					} else if metric.Value == nil || metric.Status == "not_observed" {
+						t.Fatalf("%s was erased", name)
+					}
+				}
+			}
+			for name, comparison := range result.Calibration.Comparisons {
+				if name == "execution_duration_ms" || !strings.Contains(name, "tokens") {
+					continue
+				}
+				if slices.Contains(test.unknown, name) {
+					if comparison.Difference.Count != 0 || comparison.Difference.Unknown != 1 || comparison.Difference.Median != nil {
+						t.Fatalf("%s partial usage entered paired statistics", name)
+					}
+				} else {
+					want := 0.0
+					if !test.zeroInput && (name == "input_tokens" || name == "total_tokens") {
+						want = 900
+					}
+					if comparison.Difference.Count != 1 || comparison.Difference.Median == nil || *comparison.Difference.Median != want {
+						t.Fatalf("%s complete usage changed: %+v", name, comparison)
+					}
+				}
+			}
+			for _, projection := range result.Projections {
+				if slices.Contains(test.unknown, projection.Metric) && (projection.Saving.Median != nil || projection.Saving.Unknown != 1) {
+					t.Fatalf("%s unknown usage entered projections", projection.Metric)
+				}
+			}
+			markdown := fixtureCLI(t, f, "report", "--repository", f.root, "--cache-dir", f.cache, "--profile", id, "--format", "markdown")
+			_, block, found := strings.Cut(string(markdown), "```json\n")
+			if !found {
+				t.Fatal("Markdown report has no complete measurements")
+			}
+			block, _, found = strings.Cut(block, "\n```")
+			if !found {
+				t.Fatal("Markdown report is incomplete")
+			}
+			var markdownReport reporting.Report
+			if err := json.Unmarshal([]byte(block), &markdownReport); err != nil {
+				t.Fatal(err)
+			}
+			if !reflect.DeepEqual(result.Calibration.Pairs, markdownReport.Calibration.Pairs) {
+				t.Fatal("JSON and Markdown token measurements differ")
+			}
+		})
+	}
+	after, err := repo.CaptureEvidence(context.Background())
+	if err != nil {
+		t.Fatal(err)
+	}
+	if before.Evidence.Fingerprint != after.Evidence.Fingerprint {
+		t.Fatal("pipeline changed the evaluated repository")
 	}
 }
 
@@ -679,6 +856,16 @@ func TestReportingImportRejectsIncompatibleExternalInputs(t *testing.T) {
 		{"pair index", func(p *evidence.Document, _ map[string]*evaluation.M2ConditionReport) { p.Reports[0].RunIndex++ }},
 		{"mixed model", func(_ *evidence.Document, r map[string]*evaluation.M2ConditionReport) {
 			r["basic"].Runner.Metadata.Model = "different"
+		}},
+		{"unknown report version", func(_ *evidence.Document, r map[string]*evaluation.M2ConditionReport) {
+			r["basic"].SchemaVersion = "repocue/evaluation-999"
+		}},
+		{"mixed report versions", func(_ *evidence.Document, r map[string]*evaluation.M2ConditionReport) {
+			r["basic"].SchemaVersion = evaluation.LegacyM2SchemaVersion
+			r["basic"].Runner.SchemaVersion = "repocue/evaluation-runner-3"
+		}},
+		{"mismatched runner version", func(_ *evidence.Document, r map[string]*evaluation.M2ConditionReport) {
+			r["basic"].Runner.SchemaVersion = "repocue/evaluation-runner-3"
 		}},
 		{"benchmark", func(_ *evidence.Document, r map[string]*evaluation.M2ConditionReport) {
 			r["basic"].BenchmarkVersion = "future"

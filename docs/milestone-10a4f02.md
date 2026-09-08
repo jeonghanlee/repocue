@@ -15,7 +15,7 @@ Canonical branch or ref: master
 Git upstream: origin/master
 Remote tracker: none
 
-Next session entry point: prepare M1 closure acceptance and separately authorized Git landing; implementation and T1-T22 verification are independently accepted, while M2 and G1 remain unauthorized.
+Next session entry point: obtain separate authorization for Git landing of the verified M3 correction, then resolve G1 for the draft direct/basic calibration conditions and cost checkpoint. M1 is Complete; M2 remains Blocked and no real-agent run is authorized.
 
 ## Milestone
 
@@ -23,8 +23,9 @@ Next session entry point: prepare M1 closure acceptance and separately authorize
 
 | Group | ID | Work unit | Type | Status | Ready | Deps | Done when / Evidence |
 | --- | --- | --- | --- | --- | --- | --- | --- |
-| M3 | M1 | Quantitative savings report contracts and implementation | Milestone | In progress | No | D1-D23 | The CLI imports a validated calibration, reports observed maintenance separately from projected agent savings, and passes M1 / T1-T22; [detail](#m1---quantitative-savings-report-contracts-and-implementation) |
-| M3 | M2 | Initial repository calibration and report | Milestone | Blocked | No | M1, G1 | At least three controlled direct/basic pairs produce a reproducible calibration and first report without modifying the evaluated repository; [detail](#m2---initial-repository-calibration-and-report) |
+| M3 | M1 | Quantitative savings report contracts and implementation | Milestone | Complete | No | D1-D23 | Landed in a8f650c; the CLI imports a validated calibration, separates observed maintenance from projected savings, and passes M1 / T1-T22; [detail](#m1---quantitative-savings-report-contracts-and-implementation) |
+| M3 | M2 | Initial repository calibration and report | Milestone | Blocked | No | M1, M3, G1 | At least three controlled direct/basic pairs produce a reproducible calibration and first report without modifying the evaluated repository; [detail](#m2---initial-repository-calibration-and-report) |
+| M3 | M3 | Token usage absence and report compatibility | Milestone | In progress | No | M1, D2, D14, D24 | Missing counters remain unavailable; v4 execution and unchanged v3 reads pass real-path checks and land in Git; [detail](#m3---token-usage-absence-and-report-compatibility) |
 | M3 | G1 | Calibration evidence authorization | External gate | Open | No | | The User authorizes either a verified retained report set or the cost and conditions of new Codex runs; [detail](#g1---calibration-evidence-authorization) |
 
 ### Decisions
@@ -54,6 +55,7 @@ Next session entry point: prepare M1 closure acceptance and separately authorize
 | D21 | Evaluation, import, and reporting use versioned content-sensitive evidence for non-ignored untracked files. Names-only fingerprints cannot establish exact calibration applicability. The core snapshot and refresh scan scope remain unchanged. | 2026-09-07 |
 | D22 | Legacy zero values for scan duration and Git counts without evidence of measurement are `not_observed`, not observed zero. Preserve stored rows and suppress affected totals when coverage is incomplete. | 2026-09-07 |
 | D23 | Historical state selection uses recorded observation time, not SQLite publication time. Activity uses each metric row's recording time. Reports expose both boundaries and never claim to reconstruct when a snapshot became available. | 2026-09-07 |
+| D24 | New evaluation/runner version 4 distinguishes missing counters from zero and requires complete-turn coverage per aggregate. Legacy version-3 schemas, source bytes, and declared values remain unchanged; imports dispatch by matching declared versions. | 2026-09-08 |
 
 ### Milestone Details
 
@@ -62,7 +64,7 @@ Next session entry point: prepare M1 closure acceptance and separately authorize
 Origin: 10a4f02 / M1
 Identity History: none
 GitHub Issue: none
-Status: In progress
+Status: Complete
 
 ##### Summary
 
@@ -717,13 +719,29 @@ schedules were not performed. Builds preserve `go.mod` and `go.sum` unchanged.
 
 Independent storage/evidence/history and evaluation/calculation/CLI reviews
 accepted the working implementation on 2026-09-07, including the required
-second-person documentation checks. M1 remains In progress pending formal
-closure acceptance and separately authorized Git landing. No new real-agent
-calibration or Git publication was performed.
+second-person documentation checks. Independent closure acceptance followed
+on 2026-09-08 UTC. The accepted implementation is committed and matches the
+fetched upstream. No new real-agent calibration was performed; M1 acceptance
+establishes the reporting path, not real Codex measurement coverage or savings.
 
 ##### Closure Evidence
 
-- none
+- Complete: 2026-09-08 UTC. Implementation and required T1-T22 checks are
+  recorded above; no linked GitHub issue or unresolved M1 external gate exists.
+- Commit: `a8f650cc8950015b22a7873001ef72234ea3cf3c`,
+  `Add evidence-based savings reports`; 34 implementation, contract, and
+  documentation files. The separately authorized commit and push completed.
+- Landing observation: 2026-09-08 00:31:16 UTC, `origin/master` fetched;
+  local HEAD and upstream both resolve to that commit. The working tree was
+  clean and the full tracked-file comparison against `origin/master` had no
+  differences. Recheck with `git fetch origin`, `git status --short --branch`,
+  `git rev-parse HEAD origin/master`, and `git diff --exit-code origin/master`.
+- The closure cross-check accepted the 34-file candidate and its status
+  derivatives. The later schema-only EOF correction was verified with the
+  shipped schema tests and diff check before publication; it did not change
+  schema values. The broader verification above remains dated 2026-09-07.
+- This closes the implementation work unit, not the local review-session
+  directory. Session removal and new Git publication are not authorized.
 
 ##### GitHub Projection
 
@@ -789,8 +807,8 @@ result, or selection of a structural backend.
 
 ##### Dependencies And Decisions
 
-- M1 must be Complete.
-- G1 must be Complete; resume as Not started after both dependencies complete.
+- M1 and the M3 token correction must be Complete.
+- G1 must be Complete; resume as Not started after all dependencies complete.
 - If retained source reports cannot be verified, G1 requires a separate cost
   estimate and User authorization for new Codex runs.
 
@@ -819,6 +837,35 @@ Superseded Plan Artifacts: none
    and compare them with the generated report.
 6. Record findings without claiming general significance or actual unobserved
    consumer savings.
+
+##### Measurement Preflight
+
+Observed on 2026-09-08 UTC at implementation commit `a8f650c`:
+
+- The repository contains 101 tracked files and 837,608 Git blob bytes, derived
+  from `git ls-tree -rl HEAD`. This is a corpus profile, not measured scan I/O.
+- The local CLI reports `codex-cli 0.153.4`; `codex login status` reports
+  ChatGPT authentication. No model availability probe or agent run occurred.
+- No retained real direct/basic report set was found in the repository or its
+  local `work/` artifacts. Synthetic integration fixtures are not calibration.
+- The Codex adapter at `a8f650c` loses missing usage fields. An isolated Go test
+  overlay reused `TestRunInvokesCodexAtOutermostBoundary`, omitting only
+  `reasoning_output_tokens` from the external Codex fixture's usage event and
+  adding a missing-value assertion. The unmodified shipped `Run` path emitted
+  `reasoning_output_tokens: 0` with status `observed`; the assertion failed.
+  The input, cached input, and output values remained 10, 0, and 5. Only the
+  external executable boundary was substituted; production code was unchanged.
+  Evidence locations: `internal/codexadapter/adapter_test.go` and
+  `internal/codexadapter/adapter.go` (`codexUsage`, `buildObservation`).
+- The adapter observation conflicts with D2. Its separately authorized
+  correction and missing-versus-zero verification belong to M3 below.
+  This is not a claim that Codex 0.153.4 always omits that field.
+- Routine local refresh encountered a read-only cache database in the current
+  sandbox. Cache write access must be established before local calibration
+  binding; no cache initialization or permission change was performed.
+
+These preparation checks do not complete M2 / T1-T4. The owner authorized the
+bounded M3 token correction separately; G1 still excludes new Codex runs.
 
 ##### Test Plan
 
@@ -852,6 +899,99 @@ Observed Labels: none
 Observed Milestone: none
 Last Compared: never
 
+#### M3 - Token Usage Absence And Report Compatibility
+
+Origin: 10a4f02 / M3
+Identity History: none
+GitHub Issue: none
+Status: In progress
+
+##### Summary
+
+Preserve missing Codex token observations without erasing available costs or
+correctness. Introduce evaluation and runner version 4 while retaining strict
+read compatibility for unchanged version-3 reports.
+
+##### Scope
+
+Optional per-turn counters, complete-turn aggregation per counter, checked
+arithmetic, adapter provenance, matching version dispatch, local regression
+tests, and current contract/status documentation.
+
+Out of scope: real model runs, calibration acceptance, SQLite changes, new
+dependencies, performance optimization, and changes to existing v3 schemas
+or retained report bytes.
+
+##### Completion Criteria
+
+- Missing/null counters stay unavailable and explicit zero stays observed.
+- A completed turn without usage is retained; partial coverage never yields
+  a complete aggregate. Input/output alone determine total tokens.
+- Invalid counters, overflow, unknown/mixed versions, and malformed legacy
+  input fail explicitly. Unrelated measurements and correctness survive.
+- The real adapter/evaluator/import/report path and actual pre-change v3
+  report bytes pass the checks below, with independent review.
+- Required checks and the reviewed correction have Git landing evidence.
+
+##### Dependencies And Decisions
+
+M1 supplies the reporting path. D2, D14, and D24 define measurement presence
+and version compatibility. G1 is not needed for local fixture verification;
+it remains required for real calibration. Git publication needs separate
+authorization and has not occurred.
+
+##### Implementation Plan
+
+Plan Status: accepted
+Plan Acceptance: 2026-09-08; bounded independent evaluation preflight accepted
+Implementation Authorization: 2026-09-08; User authorized missing-token correction, new JSON versions, and existing-report read compatibility
+Superseded Plan Artifacts: none
+
+1. Retain actual pre-change v3 output before editing the implementation.
+2. Update `internal/codexadapter/adapter.go`, `internal/evaluation/m2.go`,
+   and `internal/evaluation/usage.go` for optional counters, complete-turn
+   aggregation, checked arithmetic, and v4 execution.
+3. Add `docs/schema/evaluation-v4.schema.json` and
+   `docs/schema/evaluation-runner-v4.schema.json`; dispatch imports in
+   `internal/evaluation/calibration.go` and
+   `internal/reporting/calibration.go` without weakening v3.
+4. Exercise the shipped paths in adapter, evaluation, schema, and CLI tests.
+   Keep the actual legacy output under `internal/evaluation/testdata/`.
+5. Update `docs/EVALUATION.md`, this detail, and `docs/CURRENT_STATUS.md`;
+   independently verify the bounded correction before Git publication.
+
+##### Test Plan
+
+| Label | Layer | Method | Environment | Expected Result |
+| --- | --- | --- | --- | --- |
+| T1 | Usage | Run table-driven arithmetic/schema checks and shipped adapter with an external Codex executable fixture | Go; Linux | Missing/null/zero, partial turns, absent usage, invalid values, and overflow follow D24 |
+| T2 | Pipeline and compatibility | Run actual CLI/adapter/evaluator/import/report; import unchanged output generated by the pre-change CLI | Real Git and SQLite; only external Codex substituted | Five presence cases preserve unrelated metrics and JSON/Markdown agreement; old digests and declarations survive; invalid version mixes fail |
+| T3 | Regression and distribution | Full tests, race, vet, tidy -diff, static Linux build, Windows cross-build | Go; Linux amd64 host | All checks pass without dependency or default CGo changes |
+| T4 | Contracts and presentation | Check frozen v3 digests, gofmt, ASCII, diff, mdBook, and independent second/third-person verification | Source and generated book | No v3 byte changes, invalid docs, or unsupported claims |
+
+##### Verification Results
+
+| Label | Observed At | Environment | Result | Evidence |
+| --- | --- | --- | --- | --- |
+| T1 | 2026-09-08 UTC | Linux; actual adapter executable boundary | Passed | `TestRunPreservesUsagePresence`, `TestRunRejectsInvalidUsageAtOutermostBoundary`, usage/schema tables |
+| T2 | 2026-09-08 UTC | Real CLI/Git/SQLite; synthetic external Codex | Passed | `TestReportingCodexUsageThroughShippedPipeline` covers five cases; incompatible-input tests; original v3 import and both report formats exited 0 |
+| T3 | 2026-09-08 UTC | Go; Linux amd64 | Passed | Full tests, race, vet, tidy -diff, CGo-free static Linux build, and Windows amd64 cross-build exited 0; dependencies unchanged |
+| T4 | 2026-09-08 UTC | Source and mdBook | Passed | v3 schema and golden digests match; gofmt, ASCII, diff, and mdBook passed; independent code/legacy review and final second-person review accepted with no remaining finding |
+
+The golden v3 report was generated through the real `prepareReportingFixture`
+path at `a8f650c`, not by relabeling current output. Its SHA-256 is
+`681b676c0a0d12cb14237ed530fd9ccf32bc9353867affd7f0a973fe78b1c463`.
+The new CLI imported the unchanged original direct/basic set and retained
+its declared zeros. Producer incompatibility correctly suppressed projections
+for that old executable; read compatibility does not waive applicability.
+No actual agent token savings or Codex 0.153.4 usage coverage was measured.
+
+##### Closure Evidence
+
+Independent correction verification and second-person review were accepted on
+2026-09-08 UTC. No Git landing or real calibration has occurred, so M3 remains
+In progress; M1's completed status is unchanged.
+
 #### G1 - Calibration Evidence Authorization
 
 Origin: 10a4f02 / G1
@@ -865,6 +1005,65 @@ retained raw direct/basic report set that passes current validation or newly
 run Codex pairs with an explicit cost estimate and pinned execution conditions.
 Legacy reports without sufficient contemporaneous provenance cannot satisfy
 this gate solely because their original report schema validates.
+
+##### Draft Execution Conditions
+
+Prepared: 2026-09-08 UTC. These are proposed settings, not execution authority.
+The initial corpus is RepoCue only; no other local repository is included.
+
+| Setting | Proposed value or required observation |
+| --- | --- |
+| Repository | The current RepoCue checkout; all six runs and local binding use the same root |
+| Basis | A clean master commit containing accepted M1 and any separately accepted adapter correction; exact full SHA and content-sensitive fingerprint must be recorded before approval |
+| Reference implementation | `a8f650cc8950015b22a7873001ef72234ea3cf3c`; the current uncommitted correction and documentation are not a frozen measurement basis |
+| Runs | Three direct/basic pairs, six fresh ephemeral executions, one pair at a time |
+| Codex | Pin the observed `0.153.4`; recheck before execution and stop on drift |
+| Model and reasoning | `gpt-5.6-luna`, `medium`; no model substitution or automatic retry |
+| Task and answer | `docs/benchmarks/repository-state-v2.md` and `docs/schema/benchmark-answer-v2.schema.json`; version 2 |
+| Permissions | `read-only`; the shipped adapter uses `--ephemeral`, `--ignore-user-config`, `--ignore-rules`, and JSONL output |
+| Assisted context | Basic overview only, maximum 500 estimated cue tokens; normal fallback discovery remains allowed |
+| Execution path | Shipped `evaluate-m2 --conditions direct,basic`; not the five-condition shell wrapper |
+| Evidence location | Caller-owned directory outside the evaluated checkout; record its exact path at approval; never stage raw responses |
+| Local state | Same-checkout, current-epoch binding after validated import; writable cache access required |
+
+The current evaluator requires direct then basic within each pair. This draft
+keeps that order and reports the order/cache bias; it does not claim randomized
+assignment. Both arms inherit the same available instructions and environment;
+`--ignore-rules` concerns execution-policy rules, not a guarantee that repository
+instruction files are absent. Audit direct-arm commands for unintended RepoCue
+use before treating a pair as direct discovery.
+
+Stop after the first pair to report observed usage, duration, deterministic
+correctness, and any failure; obtain confirmation before the remaining two
+pairs. A failed or interrupted pair is incomplete and does not authorize a
+replacement run. Stop on state drift without reset or clean. Record attempts
+and exclusions instead of selecting only favorable or correct responses.
+
+##### Cost Preparation
+
+No same-repository real-run evidence is available to forecast token consumption
+or elapsed time reliably. The 500-token cue budget limits only the cue, not
+the agent's total input, output, or execution time. A numerical time estimate
+and a hard spending ceiling are unavailable; the current adapter has no
+built-in deadline or billing cap. The first-pair checkpoint bounds the number
+of initially started runs, not their token cost.
+
+Rates retrieved on 2026-09-08 UTC: GPT-5.6 Luna uses 5 credits per million
+uncached input tokens, 0.5 per million cached input tokens, and 30 per million
+output tokens [1]. ChatGPT authentication does not establish the account's
+remaining allowance, credit balance, or extra charge; those are not observed.
+
+For an explicitly assumed six-run total of 1.5 million uncached input tokens
+and 120,000 output tokens, the base-rate illustration is **11.1 credits**.
+It is not a measured prediction, approved budget, or maximum. Recalculate from
+the first pair before proposing the remaining four executions.
+
+For comparison only, the API base rates are USD 0.20 / 0.02 / 1.20 per million
+input / cached input / output tokens [2]. The same assumed uncached scenario
+is USD 0.444 before adjustments, not an estimate of this ChatGPT account's
+bill. Requests over 272,000 input tokens have 2x input and 1.5x output rates;
+cache writes use 1.25x uncached input rates [2]. Aggregate run usage alone
+cannot reconstruct these request-level charges.
 
 ##### Completion Criteria
 
@@ -891,3 +1090,9 @@ this gate solely because their original report schema validates.
 ### Backlog Details
 
 No unassigned work is recorded.
+
+## References
+
+[1] OpenAI. "Pricing." ChatGPT Learn. Accessed: Sep. 8, 2026. [Online]. Available: https://learn.chatgpt.com/docs/pricing
+
+[2] OpenAI. "GPT-5.6 Luna Model." OpenAI API. Accessed: Sep. 8, 2026. [Online]. Available: https://developers.openai.com/api/docs/models/gpt-5.6-luna

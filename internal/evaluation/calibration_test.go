@@ -191,7 +191,7 @@ func TestDirectBasicEvidenceRunsShippedCueWithoutOracleOrAgent(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if err := schema.Validate("evaluation-v3.schema.json", data); err != nil {
+		if err := schema.Validate("evaluation-v4.schema.json", data); err != nil {
 			t.Fatal(err)
 		}
 		var report M2ConditionReport

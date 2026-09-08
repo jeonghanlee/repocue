@@ -27,8 +27,10 @@ import (
 )
 
 const (
-	M2SchemaVersion       = "repocue/evaluation-3"
-	M2RunnerSchemaVersion = "repocue/evaluation-runner-3"
+	M2SchemaVersion           = "repocue/evaluation-4"
+	M2RunnerSchemaVersion     = "repocue/evaluation-runner-4"
+	LegacyM2SchemaVersion     = "repocue/evaluation-3"
+	legacyRunnerSchemaVersion = "repocue/evaluation-runner-3"
 
 	ConditionDirect           = "direct"
 	ConditionPlacebo          = "placebo"
@@ -46,11 +48,11 @@ var M2Conditions = []string{
 }
 
 type UsageEvent struct {
-	Turn                  int   `json:"turn"`
-	InputTokens           int64 `json:"input_tokens"`
-	CachedInputTokens     int64 `json:"cached_input_tokens"`
-	OutputTokens          int64 `json:"output_tokens"`
-	ReasoningOutputTokens int64 `json:"reasoning_output_tokens"`
+	Turn                  int    `json:"turn"`
+	InputTokens           *int64 `json:"input_tokens,omitempty"`
+	CachedInputTokens     *int64 `json:"cached_input_tokens,omitempty"`
+	OutputTokens          *int64 `json:"output_tokens,omitempty"`
+	ReasoningOutputTokens *int64 `json:"reasoning_output_tokens,omitempty"`
 }
 
 type M2RunnerMetrics struct {
@@ -550,7 +552,11 @@ func decodeM2Observation(serialized []byte) (M2RunnerObservation, error) {
 }
 
 func validateM2Observation(observation M2RunnerObservation, condition string, runIndex int, expected model.Snapshot) error {
-	if observation.SchemaVersion != M2RunnerSchemaVersion || observation.Condition != condition || observation.RunIndex != runIndex {
+	return validateM2ObservationVersion(observation, condition, runIndex, expected, M2RunnerSchemaVersion)
+}
+
+func validateM2ObservationVersion(observation M2RunnerObservation, condition string, runIndex int, expected model.Snapshot, version string) error {
+	if observation.SchemaVersion != version || observation.Condition != condition || observation.RunIndex != runIndex {
 		return errors.New("runner observation does not match the requested condition contract")
 	}
 	metadata := observation.Metadata
@@ -620,34 +626,22 @@ func validateM2Observation(observation M2RunnerObservation, condition string, ru
 			return errors.New("runner metric \"execution_duration_ms\" requires a measurement status")
 		}
 	}
-	for _, name := range []string{"input_tokens", "cached_input_tokens", "output_tokens", "reasoning_output_tokens", "total_tokens"} {
-		if metrics[name] == nil {
-			return fmt.Errorf("runner observation requires metric %s", name)
+	tokens, err := TokenMetricsFromUsage(observation.UsageEvents)
+	if err != nil {
+		return err
+	}
+	for name, expectedValue := range tokenValues(tokens) {
+		if _, found := observation.Metrics.Statuses[name]; !found {
+			return fmt.Errorf("runner metric %q requires a measurement status", name)
 		}
-	}
-	if *observation.Metrics.CachedInputTokens > *observation.Metrics.InputTokens {
-		return errors.New("cached input tokens cannot exceed input tokens")
-	}
-	if *observation.Metrics.TotalTokens != *observation.Metrics.InputTokens+*observation.Metrics.OutputTokens {
-		return errors.New("total tokens must equal input tokens plus output tokens")
-	}
-	if len(observation.UsageEvents) == 0 {
-		return errors.New("runner observation requires at least one usage event")
-	}
-	var inputTokens, cachedInputTokens, outputTokens, reasoningOutputTokens int64
-	for index, event := range observation.UsageEvents {
-		if event.Turn != index+1 || event.InputTokens < 0 || event.CachedInputTokens < 0 ||
-			event.OutputTokens < 0 || event.ReasoningOutputTokens < 0 || event.CachedInputTokens > event.InputTokens {
-			return errors.New("runner usage events must be ordered and non-negative")
+		if version == legacyRunnerSchemaVersion && expectedValue == nil {
+			return fmt.Errorf("legacy runner requires complete usage for %s", name)
 		}
-		inputTokens += event.InputTokens
-		cachedInputTokens += event.CachedInputTokens
-		outputTokens += event.OutputTokens
-		reasoningOutputTokens += event.ReasoningOutputTokens
-	}
-	if inputTokens != *observation.Metrics.InputTokens || cachedInputTokens != *observation.Metrics.CachedInputTokens ||
-		outputTokens != *observation.Metrics.OutputTokens || reasoningOutputTokens != *observation.Metrics.ReasoningOutputTokens {
-		return errors.New("runner token metrics do not equal the usage event totals")
+		actualValue := metrics[name]
+		if (actualValue == nil) != (expectedValue == nil) ||
+			(actualValue != nil && expectedValue != nil && *actualValue != *expectedValue) {
+			return fmt.Errorf("runner metric %s does not equal its complete usage event total", name)
+		}
 	}
 	if observation.Metrics.CommandExecutions != nil && *observation.Metrics.CommandExecutions != int64(len(observation.Commands)) {
 		return errors.New("command execution count does not equal the command observations")
@@ -743,7 +737,11 @@ func exceeds(part, total *int64) bool {
 }
 
 func validateM2Report(report M2ConditionReport) error {
-	if report.SchemaVersion != M2SchemaVersion || !ValidM2Condition(report.Condition) || report.RunIndex < 1 {
+	runnerVersion, err := runnerSchemaVersion(report.SchemaVersion)
+	if err != nil {
+		return err
+	}
+	if !ValidM2Condition(report.Condition) || report.RunIndex < 1 {
 		return errors.New("invalid M2 condition report")
 	}
 	if report.Cue.EstimatedTokens > report.Cue.MaxTokens {
@@ -751,6 +749,9 @@ func validateM2Report(report M2ConditionReport) error {
 	}
 	if report.Runner != nil && report.Runner.Condition != report.Condition {
 		return errors.New("M2 report and runner conditions differ")
+	}
+	if report.Runner != nil && report.Runner.SchemaVersion != runnerVersion {
+		return errors.New("M2 report and runner schema versions differ")
 	}
 	return nil
 }

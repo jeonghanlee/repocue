@@ -1,0 +1,130 @@
+{
+  "schema_version": "repocue/evaluation-3",
+  "kind": "m2-condition",
+  "generated_at": "2026-09-08T02:08:39.436580871Z",
+  "maintenance_id": "maintenance-1b7bee4d542947610136b6e8",
+  "condition": "direct",
+  "condition_order": 1,
+  "run_index": 1,
+  "benchmark_version": "repository-state-v2",
+  "output_schema_version": "repocue/benchmark-answer-2",
+  "repocue_snapshot": "snapshot-000001",
+  "repository": {
+    "supplied_path": "/tmp/TestCaptureLegacyReportForCompatibility1181570183/001",
+    "resolved_root": "/tmp/TestCaptureLegacyReportForCompatibility1181570183/001",
+    "id": "repo-5423188a55c4f378a80fc468",
+    "name": "001",
+    "branch": "main",
+    "head": "0844cbdbd4d4d9c8823dd87c6cb37a63c94ac549",
+    "dirty": false,
+    "repocue_status_digest": "sha256:62bbd0289bf31f6446d458277f03dcd5ca937783c51171265b163800aa45834a",
+    "repository_digest": "sha256:39f76c7c428a21194eaf8a890a88bbadd708ce42db64fd409c696e8a324a027f",
+    "working_tree_digest": "sha256:548b253777e0fa8b4fa01602985d9286bf64982d769e58a180f185f050b3bb1e",
+    "porcelain_status_digest": "sha256:e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "binary_diff_digest": "sha256:6e340b9cffb37a989ca544e6bb780a2c78901d3fb33738768511a30617afa01d",
+    "state_fingerprint": "sha256:d869f4a940b2d935cbc812f42f972b3f0d0b529b736b4849ab266cba592a392e",
+    "tracked_files": 2,
+    "tracked_bytes": 23
+  },
+  "baseline": {
+    "kind": "full",
+    "wall_duration_ms": 5.691172,
+    "scan_duration_ms": 3.619278,
+    "files_scanned": 2,
+    "bytes_scanned": 23,
+    "git_commands": 3,
+    "changed": true,
+    "database_size_bytes": 98304,
+    "materialized_file_rows": 2
+  },
+  "update": {
+    "kind": "no-op",
+    "wall_duration_ms": 2.955876,
+    "scan_duration_ms": 2.62728,
+    "files_scanned": 0,
+    "bytes_scanned": 0,
+    "git_commands": 3,
+    "changed": false,
+    "database_size_bytes": 98304,
+    "materialized_file_rows": 0
+  },
+  "cue": {
+    "bytes": 0,
+    "estimated_tokens": 0,
+    "max_tokens": 500,
+    "wall_duration_ms": 0
+  },
+  "runner": {
+    "schema_version": "repocue/evaluation-runner-3",
+    "condition": "direct",
+    "run_index": 1,
+    "metadata": {
+      "adapter": "external-fixture",
+      "adapter_version": "1",
+      "model": "synthetic-fixture",
+      "reasoning_effort": "medium",
+      "sandbox": "read-only",
+      "benchmark_version": "repository-state-v2",
+      "output_schema_version": "repocue/benchmark-answer-2",
+      "repository_head": "0844cbdbd4d4d9c8823dd87c6cb37a63c94ac549",
+      "repocue_snapshot": "snapshot-000001"
+    },
+    "metrics": {
+      "input_tokens": 1000,
+      "cached_input_tokens": 0,
+      "output_tokens": 10,
+      "reasoning_output_tokens": 0,
+      "total_tokens": 1010,
+      "execution_duration_ms": 10,
+      "command_executions": 0,
+      "repository_files_named": 0,
+      "git_calls": 0,
+      "statuses": {
+        "cached_input_tokens": "observed",
+        "command_executions": "observed",
+        "execution_duration_ms": "observed",
+        "git_calls": "derived",
+        "input_tokens": "observed",
+        "output_tokens": "observed",
+        "reasoning_output_tokens": "observed",
+        "repository_files_named": "derived",
+        "total_tokens": "derived"
+      }
+    },
+    "usage_events": [
+      {
+        "turn": 1,
+        "input_tokens": 1000,
+        "cached_input_tokens": 0,
+        "output_tokens": 10,
+        "reasoning_output_tokens": 0
+      }
+    ],
+    "tokenizer_counts": [],
+    "commands": [],
+    "final_response": {
+      "schema_version": "repocue/benchmark-answer-2",
+      "project_purpose": "PRIVATE_FIXTURE_RESPONSE_TEXT",
+      "git": {
+        "branch": "main",
+        "head": "0844cbdbd4d4d9c8823dd87c6cb37a63c94ac549",
+        "dirty": false,
+        "tracked_changes": [],
+        "untracked": []
+      },
+      "primary_entry_points": [],
+      "major_components": [],
+      "important_documentation": [],
+      "recent_relevant_changes": [],
+      "project_symbols": [],
+      "uncertainties": [
+        "/tmp/TestCaptureLegacyReportForCompatibility1181570183/001"
+      ]
+    },
+    "findings": [],
+    "limitations": [
+      "synthetic external fixture, not real agent measurements"
+    ]
+  },
+  "limitations": []
+}

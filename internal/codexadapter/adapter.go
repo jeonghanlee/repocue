@@ -20,7 +20,7 @@ import (
 	"github.com/jeonghanlee/repocue/internal/evaluation"
 )
 
-const AdapterVersion = "2"
+const AdapterVersion = "3"
 
 var (
 	gitCommandPattern     = regexp.MustCompile(`(^|[\s;&|()'\"])git(?:\s|$)`)
@@ -47,10 +47,10 @@ type Config struct {
 }
 
 type codexUsage struct {
-	InputTokens           int64 `json:"input_tokens"`
-	CachedInputTokens     int64 `json:"cached_input_tokens"`
-	OutputTokens          int64 `json:"output_tokens"`
-	ReasoningOutputTokens int64 `json:"reasoning_output_tokens"`
+	InputTokens           *int64 `json:"input_tokens"`
+	CachedInputTokens     *int64 `json:"cached_input_tokens"`
+	OutputTokens          *int64 `json:"output_tokens"`
+	ReasoningOutputTokens *int64 `json:"reasoning_output_tokens"`
 }
 
 type codexItem struct {
@@ -191,12 +191,15 @@ func parseEvents(serialized []byte, config Config, codexVersion string, duration
 		if err := json.Unmarshal(scanner.Bytes(), &event); err != nil {
 			return evaluation.M2RunnerObservation{}, fmt.Errorf("decode Codex JSONL event: %w", err)
 		}
-		if event.Type == "turn.completed" && event.Usage != nil {
-			usageEvents = append(usageEvents, evaluation.UsageEvent{
-				Turn: len(usageEvents) + 1, InputTokens: event.Usage.InputTokens,
-				CachedInputTokens: event.Usage.CachedInputTokens, OutputTokens: event.Usage.OutputTokens,
-				ReasoningOutputTokens: event.Usage.ReasoningOutputTokens,
-			})
+		if event.Type == "turn.completed" {
+			usage := evaluation.UsageEvent{Turn: len(usageEvents) + 1}
+			if event.Usage != nil {
+				usage.InputTokens = event.Usage.InputTokens
+				usage.CachedInputTokens = event.Usage.CachedInputTokens
+				usage.OutputTokens = event.Usage.OutputTokens
+				usage.ReasoningOutputTokens = event.Usage.ReasoningOutputTokens
+			}
+			usageEvents = append(usageEvents, usage)
 		}
 		if event.Type != "item.completed" || event.Item == nil {
 			continue
@@ -214,16 +217,17 @@ func parseEvents(serialized []byte, config Config, codexVersion string, duration
 	if err := scanner.Err(); err != nil {
 		return evaluation.M2RunnerObservation{}, err
 	}
-	if len(usageEvents) == 0 {
-		return evaluation.M2RunnerObservation{}, errors.New("Codex JSONL omitted turn.completed usage")
+	metrics, err := evaluation.TokenMetricsFromUsage(usageEvents)
+	if err != nil {
+		return evaluation.M2RunnerObservation{}, fmt.Errorf("Codex JSONL usage: %w", err)
 	}
 	if finalText == "" || !json.Valid([]byte(finalText)) {
 		return evaluation.M2RunnerObservation{}, errors.New("Codex JSONL omitted a valid structured final response")
 	}
-	return buildObservation(config, codexVersion, duration, usageEvents, toolCalls, commands, json.RawMessage(finalText)), nil
+	return buildObservation(config, codexVersion, duration, metrics, usageEvents, toolCalls, commands, json.RawMessage(finalText)), nil
 }
 
-func buildObservation(config Config, codexVersion string, duration time.Duration, usageEvents []evaluation.UsageEvent, toolCalls int64, commands []evaluation.CommandObservation, final json.RawMessage) evaluation.M2RunnerObservation {
+func buildObservation(config Config, codexVersion string, duration time.Duration, metrics evaluation.M2RunnerMetrics, usageEvents []evaluation.UsageEvent, toolCalls int64, commands []evaluation.CommandObservation, final json.RawMessage) evaluation.M2RunnerObservation {
 	commandCount := int64(len(commands))
 	gitCalls := int64(0)
 	searchCalls := int64(0)
@@ -249,28 +253,20 @@ func buildObservation(config Config, codexVersion string, duration time.Duration
 	}
 	sort.Strings(files)
 	fileCount := int64(len(files))
-	var inputTokens, cachedInputTokens, outputTokens, reasoningOutputTokens int64
-	for _, usage := range usageEvents {
-		inputTokens += usage.InputTokens
-		cachedInputTokens += usage.CachedInputTokens
-		outputTokens += usage.OutputTokens
-		reasoningOutputTokens += usage.ReasoningOutputTokens
-	}
-	totalTokens := inputTokens + outputTokens
 	durationMS := float64(duration) / float64(time.Millisecond)
-	metrics := evaluation.M2RunnerMetrics{
-		InputTokens: &inputTokens, CachedInputTokens: &cachedInputTokens,
-		OutputTokens: &outputTokens, ReasoningOutputTokens: &reasoningOutputTokens,
-		TotalTokens: &totalTokens, ExecutionDurationMS: &durationMS, CommandExecutions: &commandCount,
-		RepositoryFilesNamed: &fileCount, NamedFileSizeProxyBytes: &bytesRead, GitCalls: &gitCalls,
-		FilesystemSearchCalls: &searchCalls, ToolCalls: &toolCalls,
-		Statuses: map[string]string{
-			"input_tokens": "observed", "cached_input_tokens": "observed", "output_tokens": "observed",
-			"reasoning_output_tokens": "observed", "total_tokens": "derived",
-			"execution_duration_ms": "observed", "command_executions": "observed",
-			"repository_files_named": "derived", "named_file_size_proxy_bytes": "derived",
-			"git_calls": "derived", "filesystem_search_calls": "derived", "tool_calls": "observed",
-		},
+	metrics.ExecutionDurationMS = &durationMS
+	metrics.CommandExecutions = &commandCount
+	metrics.RepositoryFilesNamed = &fileCount
+	metrics.NamedFileSizeProxyBytes = &bytesRead
+	metrics.GitCalls = &gitCalls
+	metrics.FilesystemSearchCalls = &searchCalls
+	metrics.ToolCalls = &toolCalls
+	for name, status := range map[string]string{
+		"execution_duration_ms": "observed", "command_executions": "observed",
+		"repository_files_named": "derived", "named_file_size_proxy_bytes": "derived",
+		"git_calls": "derived", "filesystem_search_calls": "derived", "tool_calls": "observed",
+	} {
+		metrics.Statuses[name] = status
 	}
 	if config.Condition != evaluation.ConditionDirect {
 		fallbackCommands := int64(0)

@@ -16,7 +16,7 @@ import (
 	"github.com/santhosh-tekuri/jsonschema/v6"
 )
 
-const m2RunnerObservationScript = `printf '{"schema_version":"repocue/evaluation-runner-3","condition":"%s","run_index":%s,"metadata":{"adapter":"fixture","adapter_version":"1","model":"fixture","reasoning_effort":"medium","sandbox":"read-only","benchmark_version":"repository-state-v2","output_schema_version":"repocue/benchmark-answer-2","repository_head":"%s","repocue_snapshot":"%s"},"metrics":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1,"reasoning_output_tokens":0,"total_tokens":2,"statuses":{"input_tokens":"observed","cached_input_tokens":"observed","output_tokens":"observed","reasoning_output_tokens":"observed","total_tokens":"derived"}},"usage_events":[{"turn":1,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1,"reasoning_output_tokens":0}],"tokenizer_counts":[],"commands":[],"final_response":{"schema_version":"repocue/benchmark-answer-2","project_purpose":"Fixture","git":{"branch":"main","head":"%s","dirty":false,"tracked_changes":[],"untracked":[]},"primary_entry_points":[],"major_components":[],"important_documentation":[],"recent_relevant_changes":[],"project_symbols":[],"uncertainties":[]},"findings":[],"limitations":[]}\n' "$REPOCUE_EVAL_CONDITION" "$REPOCUE_EVAL_RUN_INDEX" "$REPOCUE_EVAL_HEAD" "$REPOCUE_EVAL_SNAPSHOT" "$REPOCUE_EVAL_HEAD"
+const m2RunnerObservationScript = `printf '{"schema_version":"repocue/evaluation-runner-4","condition":"%s","run_index":%s,"metadata":{"adapter":"fixture","adapter_version":"1","model":"fixture","reasoning_effort":"medium","sandbox":"read-only","benchmark_version":"repository-state-v2","output_schema_version":"repocue/benchmark-answer-2","repository_head":"%s","repocue_snapshot":"%s"},"metrics":{"input_tokens":1,"cached_input_tokens":0,"output_tokens":1,"reasoning_output_tokens":0,"total_tokens":2,"statuses":{"input_tokens":"observed","cached_input_tokens":"observed","output_tokens":"observed","reasoning_output_tokens":"observed","total_tokens":"derived"}},"usage_events":[{"turn":1,"input_tokens":1,"cached_input_tokens":0,"output_tokens":1,"reasoning_output_tokens":0}],"tokenizer_counts":[],"commands":[],"final_response":{"schema_version":"repocue/benchmark-answer-2","project_purpose":"Fixture","git":{"branch":"main","head":"%s","dirty":false,"tracked_changes":[],"untracked":[]},"primary_entry_points":[],"major_components":[],"important_documentation":[],"recent_relevant_changes":[],"project_symbols":[],"uncertainties":[]},"findings":[],"limitations":[]}\n' "$REPOCUE_EVAL_CONDITION" "$REPOCUE_EVAL_RUN_INDEX" "$REPOCUE_EVAL_HEAD" "$REPOCUE_EVAL_SNAPSHOT" "$REPOCUE_EVAL_HEAD"
 `
 
 func TestConditionSetDryRunUsesRealOracleAndWritesAtomicReports(t *testing.T) {
@@ -50,7 +50,7 @@ func TestConditionSetDryRunUsesRealOracleAndWritesAtomicReports(t *testing.T) {
 	if len(reportEntries) != len(M2Conditions) {
 		t.Fatalf("got %d reports, want %d", len(reportEntries), len(M2Conditions))
 	}
-	schema := compileM2Schema(t, "evaluation-v3.schema.json")
+	schema := compileM2Schema(t, "evaluation-v4.schema.json")
 	for index, report := range manifest.Reports {
 		if report.Condition != M2Conditions[index] || report.ConditionOrder != index+1 {
 			t.Fatalf("unexpected report order: %#v", report)
@@ -113,7 +113,7 @@ printf '%s\n' "$REPOCUE_EVAL_CONDITION" >>"$REPOCUE_TEST_LOG"
 		if report.Runner == nil || report.Runner.Condition != report.Condition || report.Runner.RunIndex != 3 {
 			t.Fatalf("runner observation mismatch: %#v", report)
 		}
-		validateM2Schema(t, compileM2Schema(t, "evaluation-v3.schema.json"), report)
+		validateM2Schema(t, compileM2Schema(t, "evaluation-v4.schema.json"), report)
 	}
 }
 
@@ -251,7 +251,7 @@ func TestM2RunnerObservationValidation(t *testing.T) {
 		}},
 		{"status without value", func(value *M2RunnerObservation) { value.Metrics.Statuses = map[string]string{"git_calls": "observed"} }},
 		{"inconsistent total", func(value *M2RunnerObservation) { *value.Metrics.TotalTokens = 99 }},
-		{"inconsistent usage", func(value *M2RunnerObservation) { value.UsageEvents[0].OutputTokens = 3 }},
+		{"inconsistent usage", func(value *M2RunnerObservation) { value.UsageEvents[0].OutputTokens = tokenPointer(3) }},
 		{"wrong snapshot", func(value *M2RunnerObservation) { value.Metadata.RepoCueSnapshot = "snapshot-wrong" }},
 		{"missing final response", func(value *M2RunnerObservation) { value.FinalResponse = nil }},
 		{"invalid final response schema", func(value *M2RunnerObservation) { value.FinalResponse = json.RawMessage(`{}`) }},
@@ -272,7 +272,7 @@ func TestM2RunnerObservationValidation(t *testing.T) {
 	if err := validateM2Observation(observation, ConditionDirect, 1, expected); err != nil {
 		t.Fatalf("valid runner observation was rejected: %v", err)
 	}
-	validateM2Schema(t, compileM2Schema(t, "evaluation-runner-v3.schema.json"), observation)
+	validateM2Schema(t, compileM2Schema(t, "evaluation-runner-v4.schema.json"), observation)
 }
 
 func TestM2RunnerIdentityRequiresIdenticalConditions(t *testing.T) {
@@ -285,7 +285,7 @@ func TestM2RunnerIdentityRequiresIdenticalConditions(t *testing.T) {
 }
 
 func TestM2RunnerSchemaRejectsMissingStatusAndInvalidAnswer(t *testing.T) {
-	schema := compileM2Schema(t, "evaluation-runner-v3.schema.json")
+	schema := compileM2Schema(t, "evaluation-runner-v4.schema.json")
 	tests := []struct {
 		name   string
 		mutate func(*M2RunnerObservation)
@@ -336,8 +336,8 @@ func validM2Observation() (M2RunnerObservation, model.Snapshot) {
 			},
 		},
 		UsageEvents: []UsageEvent{{
-			Turn: 1, InputTokens: input, CachedInputTokens: cached,
-			OutputTokens: output, ReasoningOutputTokens: reasoning,
+			Turn: 1, InputTokens: &input, CachedInputTokens: &cached,
+			OutputTokens: &output, ReasoningOutputTokens: &reasoning,
 		}},
 		TokenizerCounts: []TokenizerCount{}, Commands: []CommandObservation{},
 		FinalResponse: validBenchmarkResponse(head), Findings: []ContextFinding{}, Limitations: []string{},
@@ -416,7 +416,7 @@ func compileM2Schema(t *testing.T, name string) *jsonschema.Schema {
 	compiler := jsonschema.NewCompiler()
 	compiler.AssertFormat()
 	seen := map[string]bool{}
-	for _, resourceName := range []string{name, "evaluation-runner-v3.schema.json", "benchmark-answer-v2.schema.json"} {
+	for _, resourceName := range []string{name, "evaluation-runner-v3.schema.json", "evaluation-runner-v4.schema.json", "benchmark-answer-v2.schema.json"} {
 		if seen[resourceName] {
 			continue
 		}

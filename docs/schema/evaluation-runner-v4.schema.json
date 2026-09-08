@@ -1,0 +1,219 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/evaluation-runner-v4.schema.json",
+  "title": "RepoCue external evaluation runner observation version 4",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "condition",
+    "run_index",
+    "metadata",
+    "metrics",
+    "usage_events",
+    "tokenizer_counts",
+    "commands",
+    "final_response",
+    "findings",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {"type": "string", "const": "repocue/evaluation-runner-4"},
+    "condition": {
+      "type": "string",
+      "enum": ["direct", "placebo", "basic", "ranked", "structural-oracle"]
+    },
+    "run_index": {"type": "integer", "minimum": 1},
+    "metadata": {
+      "type": "object",
+      "required": [
+        "adapter",
+        "adapter_version",
+        "model",
+        "reasoning_effort",
+        "sandbox",
+        "benchmark_version",
+        "output_schema_version",
+        "repository_head",
+        "repocue_snapshot"
+      ],
+      "properties": {
+        "adapter": {"type": "string", "minLength": 1},
+        "adapter_version": {"type": "string", "minLength": 1},
+        "codex_version": {"type": "string"},
+        "model": {"type": "string", "minLength": 1},
+        "reasoning_effort": {"type": "string", "minLength": 1},
+        "sandbox": {"type": "string", "minLength": 1},
+        "benchmark_version": {"type": "string", "const": "repository-state-v2"},
+        "output_schema_version": {"type": "string", "const": "repocue/benchmark-answer-2"},
+        "repository_head": {"type": "string"},
+        "repocue_snapshot": {"type": "string", "minLength": 1}
+      },
+      "additionalProperties": false
+    },
+    "metrics": {
+      "type": "object",
+      "required": ["statuses"],
+      "properties": {
+        "input_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "cached_input_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "output_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "reasoning_output_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "total_tokens": {"type": ["integer", "null"], "minimum": 0},
+        "execution_duration_ms": {"type": "number", "minimum": 0},
+        "command_executions": {"type": "integer", "minimum": 0},
+        "repository_files_named": {"type": "integer", "minimum": 0},
+        "named_file_size_proxy_bytes": {"type": "integer", "minimum": 0},
+        "git_calls": {"type": "integer", "minimum": 0},
+        "filesystem_search_calls": {"type": "integer", "minimum": 0},
+        "tool_calls": {"type": "integer", "minimum": 0},
+        "fallback_repository_commands": {"type": "integer", "minimum": 0},
+        "fallback_repository_files_named": {"type": "integer", "minimum": 0},
+        "fallback_named_file_size_proxy_bytes": {"type": "integer", "minimum": 0},
+        "statuses": {
+          "type": "object",
+          "required": [
+            "input_tokens",
+            "cached_input_tokens",
+            "output_tokens",
+            "reasoning_output_tokens",
+            "total_tokens"
+          ],
+          "properties": {
+            "input_tokens": {"$ref": "#/$defs/measurementStatus"},
+            "cached_input_tokens": {"$ref": "#/$defs/measurementStatus"},
+            "output_tokens": {"$ref": "#/$defs/measurementStatus"},
+            "reasoning_output_tokens": {"$ref": "#/$defs/measurementStatus"},
+            "total_tokens": {"$ref": "#/$defs/measurementStatus"},
+            "execution_duration_ms": {"$ref": "#/$defs/measurementStatus"},
+            "command_executions": {"$ref": "#/$defs/measurementStatus"},
+            "repository_files_named": {"$ref": "#/$defs/measurementStatus"},
+            "named_file_size_proxy_bytes": {"$ref": "#/$defs/measurementStatus"},
+            "git_calls": {"$ref": "#/$defs/measurementStatus"},
+            "filesystem_search_calls": {"$ref": "#/$defs/measurementStatus"},
+            "tool_calls": {"$ref": "#/$defs/measurementStatus"},
+            "fallback_repository_commands": {"$ref": "#/$defs/measurementStatus"},
+            "fallback_repository_files_named": {"$ref": "#/$defs/measurementStatus"},
+            "fallback_named_file_size_proxy_bytes": {"$ref": "#/$defs/measurementStatus"}
+          },
+          "additionalProperties": false
+        }
+      },
+      "allOf": [
+        {
+          "if": {"properties": {"statuses": {"properties": {"input_tokens": {"const": "not_observed"}}}}},
+          "then": {"properties": {"input_tokens": {"type": "null"}}},
+          "else": {"required": ["input_tokens"], "properties": {"input_tokens": {"type": "integer"}}}
+        },
+        {
+          "if": {"properties": {"statuses": {"properties": {"cached_input_tokens": {"const": "not_observed"}}}}},
+          "then": {"properties": {"cached_input_tokens": {"type": "null"}}},
+          "else": {"required": ["cached_input_tokens"], "properties": {"cached_input_tokens": {"type": "integer"}}}
+        },
+        {
+          "if": {"properties": {"statuses": {"properties": {"output_tokens": {"const": "not_observed"}}}}},
+          "then": {"properties": {"output_tokens": {"type": "null"}}},
+          "else": {"required": ["output_tokens"], "properties": {"output_tokens": {"type": "integer"}}}
+        },
+        {
+          "if": {"properties": {"statuses": {"properties": {"reasoning_output_tokens": {"const": "not_observed"}}}}},
+          "then": {"properties": {"reasoning_output_tokens": {"type": "null"}}},
+          "else": {"required": ["reasoning_output_tokens"], "properties": {"reasoning_output_tokens": {"type": "integer"}}}
+        },
+        {
+          "if": {"properties": {"statuses": {"properties": {"total_tokens": {"const": "not_observed"}}}}},
+          "then": {"properties": {"total_tokens": {"type": "null"}}},
+          "else": {"required": ["total_tokens"], "properties": {"total_tokens": {"type": "integer"}}}
+        }
+      ],
+      "dependentSchemas": {
+        "execution_duration_ms": {"properties": {"statuses": {"required": ["execution_duration_ms"]}}},
+        "command_executions": {"properties": {"statuses": {"required": ["command_executions"]}}},
+        "repository_files_named": {"properties": {"statuses": {"required": ["repository_files_named"]}}},
+        "named_file_size_proxy_bytes": {"properties": {"statuses": {"required": ["named_file_size_proxy_bytes"]}}},
+        "git_calls": {"properties": {"statuses": {"required": ["git_calls"]}}},
+        "filesystem_search_calls": {"properties": {"statuses": {"required": ["filesystem_search_calls"]}}},
+        "tool_calls": {"properties": {"statuses": {"required": ["tool_calls"]}}},
+        "fallback_repository_commands": {"properties": {"statuses": {"required": ["fallback_repository_commands"]}}},
+        "fallback_repository_files_named": {"properties": {"statuses": {"required": ["fallback_repository_files_named"]}}},
+        "fallback_named_file_size_proxy_bytes": {"properties": {"statuses": {"required": ["fallback_named_file_size_proxy_bytes"]}}}
+      },
+      "additionalProperties": false
+    },
+    "usage_events": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["turn"],
+        "properties": {
+          "turn": {"type": "integer", "minimum": 1},
+          "input_tokens": {"type": ["integer", "null"], "minimum": 0},
+          "cached_input_tokens": {"type": ["integer", "null"], "minimum": 0},
+          "output_tokens": {"type": ["integer", "null"], "minimum": 0},
+          "reasoning_output_tokens": {"type": ["integer", "null"], "minimum": 0}
+        },
+        "additionalProperties": false
+      },
+      "minItems": 1
+    },
+    "tokenizer_counts": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["tokenizer", "tokens"],
+        "properties": {
+          "tokenizer": {"type": "string", "minLength": 1},
+          "tokens": {"type": "integer", "minimum": 0}
+        },
+        "additionalProperties": false
+      }
+    },
+    "commands": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["command", "classification", "files_read"],
+        "properties": {
+          "command": {"type": "string", "minLength": 1},
+          "classification": {
+            "type": "string",
+            "enum": [
+              "other",
+              "git",
+              "filesystem_search",
+              "filesystem_read",
+              "git+filesystem_search",
+              "git+filesystem_read",
+              "filesystem_search+filesystem_read",
+              "git+filesystem_search+filesystem_read"
+            ]
+          },
+          "files_read": {"type": "array", "items": {"type": "string", "minLength": 1}}
+        },
+        "additionalProperties": false
+      }
+    },
+    "final_response": {"$ref": "benchmark-answer-v2.schema.json"},
+    "findings": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["category", "severity", "message"],
+        "properties": {
+          "category": {"type": "string", "minLength": 1},
+          "severity": {"type": "string", "minLength": 1},
+          "message": {"type": "string", "minLength": 1},
+          "evidence": {"type": "string"}
+        },
+        "additionalProperties": false
+      }
+    },
+    "limitations": {"type": "array", "items": {"type": "string", "minLength": 1}}
+  },
+  "additionalProperties": false,
+  "$defs": {
+    "measurementStatus": {
+      "type": "string",
+      "enum": ["observed", "derived", "estimated", "not_observed"]
+    }
+  }
+}

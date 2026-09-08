@@ -115,7 +115,7 @@ func loadCalibration(config ImportConfig, repo *repository.Repository, state mod
 	byPair := map[string]*Pair{}
 	byDigest := map[string]evaluation.M2ConditionReport{}
 	seenSlots := map[string]bool{}
-	var commonRepo string
+	var commonRepo, commonSchema string
 	for _, source := range proof.Reports {
 		if _, exists := byDigest[source.Digest]; exists {
 			return Calibration{}, errors.New("duplicate selected report digest")
@@ -132,12 +132,21 @@ func loadCalibration(config ImportConfig, repo *repository.Repository, state mod
 		if err != nil {
 			return Calibration{}, err
 		}
-		if err := schema.Validate("evaluation-v3.schema.json", data); err != nil {
-			return Calibration{}, err
-		}
 		var report evaluation.M2ConditionReport
 		if err := decode(data, &report); err != nil {
 			return Calibration{}, err
+		}
+		schemaFile, err := evaluation.CalibrationReportSchema(report.SchemaVersion)
+		if err != nil {
+			return Calibration{}, err
+		}
+		if err := schema.Validate(schemaFile, data); err != nil {
+			return Calibration{}, err
+		}
+		if commonSchema == "" {
+			commonSchema = report.SchemaVersion
+		} else if commonSchema != report.SchemaVersion {
+			return Calibration{}, errors.New("mixed evaluation report schema versions")
 		}
 		if report.Condition != source.Condition || report.RunIndex != source.RunIndex || report.RepoCueSnapshot != source.Snapshot || report.Repository.StateFingerprint != source.StateFingerprint ||
 			report.Repository.ID != repo.ID || report.Repository.ResolvedRoot != repo.Root || report.Repository.RepoCueStatusDigest != proof.Capture.StatusDigest || report.Repository.RepositoryDigest != proof.Capture.TrackedDigest ||

@@ -243,5 +243,32 @@ func ValidateCalibrationReport(report M2ConditionReport, basis model.Basis) erro
 	if report.Runner == nil {
 		return errors.New("runnerless reports cannot calibrate agent savings")
 	}
-	return validateM2Observation(*report.Runner, report.Condition, report.RunIndex, model.Snapshot{ID: report.RepoCueSnapshot, Basis: basis})
+	version, err := runnerSchemaVersion(report.SchemaVersion)
+	if err != nil {
+		return err
+	}
+	return validateM2ObservationVersion(*report.Runner, report.Condition, report.RunIndex, model.Snapshot{ID: report.RepoCueSnapshot, Basis: basis}, version)
+}
+
+// CalibrationReportSchema selects the immutable contract declared by a report.
+func CalibrationReportSchema(version string) (string, error) {
+	switch version {
+	case M2SchemaVersion:
+		return "evaluation-v4.schema.json", nil
+	case LegacyM2SchemaVersion:
+		return "evaluation-v3.schema.json", nil
+	default:
+		return "", errors.New("unsupported evaluation report schema version")
+	}
+}
+
+func runnerSchemaVersion(version string) (string, error) {
+	switch version {
+	case M2SchemaVersion:
+		return M2RunnerSchemaVersion, nil
+	case LegacyM2SchemaVersion:
+		return legacyRunnerSchemaVersion, nil
+	default:
+		return "", errors.New("unsupported evaluation report schema version")
+	}
 }

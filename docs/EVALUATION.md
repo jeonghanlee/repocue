@@ -70,8 +70,8 @@ repository. Per-repository results are reported before any aggregate.
 
 ## Versioned Contracts
 
-- Condition report: `repocue/evaluation-3`
-- External runner observation: `repocue/evaluation-runner-3`
+- Condition report: `repocue/evaluation-4`
+- External runner observation: `repocue/evaluation-runner-4`
 - Benchmark: `repository-state-v2`
 - Benchmark answer: `repocue/benchmark-answer-2`
 - Experimental cue: `repocue/cue-2`
@@ -89,15 +89,39 @@ JSON object. Runtime validation rejects negative values, token or command
 totals that contradict their observations, unknown or inconsistent status
 values, basis metadata mismatches, and runner metadata drift across conditions.
 
+New executions require version 4. Calibration import also accepts unchanged
+`evaluation-3` reports with their matching `evaluation-runner-3` contract.
+Import selects the declared JSON Schema and runtime rules; unknown versions,
+mixed report versions within one selected set, mismatched report/runner
+versions, and incomplete version-3 token observations are rejected.
+
+Legacy reads preserve source bytes, digests, versions, and declared values.
+They cannot determine whether a historical zero originated from an omitted
+Codex field. Legacy report readability does not establish applicability:
+producer, repository, cue, and evidence compatibility checks still apply.
+
 ## Codex Adapter
 
 `repocue-codex-runner` invokes a fresh ephemeral Codex non-interactive run in
 JSONL mode with ignored user configuration and rules, read-only sandboxing,
 the selected model and reasoning setting, and benchmark output schema.
 
-Every `turn.completed.usage` event is preserved. Report totals sum the
-observed per-turn values. Missing measurements remain absent and are not
-converted to zero.
+Adapter version 3 preserves every `turn.completed` event, including a turn
+whose usage object is absent, null, or empty. Each token counter is optional:
+an omitted or null value means unknown; an explicit zero remains observed.
+The output omits unknown counters and requires `not_observed` for each
+unknown aggregate. Version-4 readers also accept explicit JSON null.
+
+A counter's aggregate is available only when every completed turn supplies
+that counter. Partial values remain in the ordered usage events but never
+masquerade as a complete run total. Input and output determine total tokens;
+missing cached or reasoning values do not erase a complete input/output total.
+Cached and reasoning counts are subsets and are never added to total tokens.
+Negative values, invalid event order, cached counts exceeding a known input
+count, and integer overflow are errors. A stream with no completed turns is
+an error. A completed turn without usage can still retain commands, duration,
+the final response, and correctness. Only comparisons and projections
+requiring missing measurements become unavailable.
 
 The adapter distinguishes measurement sources:
 
