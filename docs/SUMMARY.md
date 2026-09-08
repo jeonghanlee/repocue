@@ -8,5 +8,7 @@
 - [Data Model](DATA_MODEL.md)
 - [Evaluation](EVALUATION.md)
 - [Current Status](CURRENT_STATUS.md)
+- [M3 Quantitative Savings Report](milestone-10a4f02.md)
 - [Project Brief](PROJECT_BRIEF.md)
 - [ADR 0001: Structural Analysis Backends](adr/0001-structural-analysis-backends.md)
+- [ADR 0002: Quantitative Reporting](adr/0002-quantitative-reporting.md)

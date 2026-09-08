@@ -152,10 +152,72 @@ these values separate:
 - per-agent cue cost;
 - per-agent fallback discovery cost.
 
-Projected totals are always `derived`. Estimated cue tokens remain the fast
+M2 experiment reuse totals are `derived`. Estimated cue tokens remain the fast
 runtime estimate `ceil(serialized UTF-8 bytes / 4)`. Measured tokenizer-
 specific counts are separate fields.
 
 M2 does not claim success before real condition reports and blinded
 qualitative assessments exist. Dry runs verify contracts and execution paths;
 they are not agent evidence.
+
+## Quantitative Reporting
+
+Routine `repocue report` separates recorded maintenance from calibration-based
+agent projections. It runs no agent, model, or tokenizer. Without calibration
+it reports maintenance and unavailable agent evidence, not savings. Local M1
+adds no real-agent result: its synthetic external-runner fixtures validate
+software behavior only.
+
+Direct/basic preparation times the shipped cue CLI through exit and complete
+stdout capture, then delivers those exact bytes to the basic runner. Evidence
+records executable/revision, arguments, cache/hint state, output digest, times,
+and digest-linked Git Trace2 events. Builder time remains diagnostic; setup
+and pre/post isolation captures are separate experiment overhead.
+Import rejects a cue observation that finishes after the selected assisted
+pre-run capture; matching bytes alone do not establish pre-agent delivery.
+
+Import requires complete pairs with identical repository and runner contracts
+and verifies content-sensitive evidence against the checkout and maintained
+snapshot. One pair is `exploratory`; at least three are `descriptive`, never a
+significance claim. Unsupported legacy provenance is rejected; optional missing
+cue cost or scoring stays unavailable. Raw answers and narratives stay external.
+Estimated source agent costs remain labeled diagnostics. Only observed or
+derived agent costs enter paired calibration statistics and reuse arithmetic;
+an excluded estimate increases unknown coverage only for its measurement.
+
+The existing scorer checks branch, HEAD, dirty state, tracked changes, and
+untracked paths independently of qualitative assessment. Incorrect valid
+responses remain in efficiency samples. Optional assessment-2 scores are
+digest-joined to responses and retain assessor and known dates. Missing dates
+are not inferred from file timestamps; no score assesses a later snapshot.
+
+For pair `i`, `D_i` is direct agent cost, `A_i` assisted agent cost, `Q_i`
+comparable full cue CLI cost, and `H` recorded local epoch maintenance:
+
+```text
+direct_i(N) = N * D_i
+assisted_i(N) = H + N * (A_i + Q_i)
+saving_i(N) = direct_i(N) - assisted_i(N)
+```
+
+Calculate per pair before medians, ranges, and percentages. Paired
+`[100, 200, 300]` and `[90, 1, 299]` have median difference 10, not the
+difference of medians, 110. Missing pairs have per-metric coverage. Future
+1, 2, 3, 5, and 10-consumer scenarios are `estimated` even at an exact measured
+reference. `--consumers N` adds an explicit scenario; cue counts are not users.
+
+Agent tokens already include supplied context, so additional cue tokens are
+zero by accounting definition; estimates are not added again. Deterministic
+core H has zero LLM tokens. Runtime includes full CLI Q and full recorded epoch
+baseline/refresh H once, not their already-included scan portions. For positive
+`g_i = D_i - (A_i + Q_i)`, the first strictly cheaper count is
+`floor(H / g_i) + 1`. Other gaps have no finite break-even; missing comparable
+components suppress only the affected total.
+
+Command classifications are not Git processes. Named-file-size proxies are not
+scan bytes or filesystem I/O. No net I/O savings, task-ready latency, CPU,
+memory, freshness lag, historical DB size, or routine cue-runtime trends are
+invented. Current validation cost is visible separately. See
+[CLI usage](CLI.md#quantitative-reports) for import, cutoffs, and external
+periodic publication. Fresh real-agent calibration remains separately
+authorized; reporting installs no scheduler and launches no model.

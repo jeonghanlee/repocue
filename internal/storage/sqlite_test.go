@@ -87,8 +87,8 @@ func TestOpenMigratesSchemaVersionOne(t *testing.T) {
 	if err := store.db.QueryRowContext(ctx, "PRAGMA user_version").Scan(&version); err != nil {
 		t.Fatal(err)
 	}
-	if version != 2 {
-		t.Fatalf("schema version = %d, want 2", version)
+	if version != 3 {
+		t.Fatalf("schema version = %d, want 3", version)
 	}
 	columns := map[string]bool{}
 	rows, err := store.db.QueryContext(ctx, "PRAGMA table_info(operation_runs)")

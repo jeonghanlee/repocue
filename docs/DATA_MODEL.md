@@ -1,8 +1,8 @@
-# RepoCue First Vertical Slice Data Model
+# RepoCue Data Model
 
 ## Scope
 
-This document defines the persisted state needed by the first vertical slice.
+This document defines core repository state and quantitative-reporting data.
 
 **Out of scope:** checkpoint tables, pin state, pruning metadata, and retention
 policy.
@@ -27,6 +27,7 @@ epoch and keeps the preceding epoch as `superseded`.
 - Snapshot: `snapshot-000001`
 - Delta: `delta-000001`
 - File entity: `file:<repository-relative-path>`
+- Calibration: `calibration-<sha256>`
 
 Sequence values are allocated transactionally and stored as explicit text
 identifiers. SQLite internal row IDs are not part of the public model.
@@ -111,3 +112,44 @@ while composing an evaluation cue. A future structural index must use stable
 entity IDs and content-digest keys, record parser backend and version
 provenance, and re-analyze only changed source files. Retention behavior for
 such an index belongs to the later storage-lifecycle design.
+
+## Calibration And Reporting
+
+Schema 3 adds `calibration_references`: calibration ID, repository ID, local
+epoch and snapshot, relative artifact path, SHA-256 digest, binding observation
+time, content fingerprint and algorithm, contract digest, model, and benchmark.
+Existing state and measurement rows are preserved. There are no new
+measurement-history or structural tables.
+
+Immutable `calibrations/<id>.json` files beside `state.db` use
+`repocue/calibration-1`. They retain numeric paired samples, source-report
+digests and snapshot IDs, producer/cue/runner contracts, correctness outcomes,
+optional qualitative scores and dates, local binding, and limitations. Identity
+excludes import time; reimport returns the original observation. Missing or
+modified referenced files are errors, not usable profiles.
+
+External `repocue/calibration-evidence-1` names reports, cue stdout, Git events,
+scoring basis, and assessments using relative paths and digests. It preserves
+the original evaluation fingerprint separately from
+`repocue/content-evidence-1`, which combines Git status/index, tracked state,
+and sorted non-ignored untracked path/kind/mode/content digests. Absolute
+evaluated paths and raw responses are not copied into calibration. Existing
+SQLite repository-root metadata remains unchanged.
+
+`repocue/savings-report-1` is stdout-only. Measurements identify classification,
+unit, accounting boundary, and unavailable values. Statistics retain pair
+values, medians, ranges, counts, and unknown coverage. JSON and Markdown share
+one calculation result.
+
+State selection uses the greatest observation strictly before cutoff, with
+snapshot sequence resolving ties. Binding selection uses its evidence
+observation. Activity uses `[start, cutoff)` recording times; maintenance uses
+all baseline/rebaseline and refresh rows in the selected epoch before cutoff,
+including pre-window rows. These are not publication-time claims.
+
+Version-1 migration supplied zero defaults for scan duration and Git count.
+Without independent provenance these zeros remain `not_observed`, even in a
+version-2 DB. Valid zero scanned bytes remain zero. Partial known-only
+statistics never replace full totals, trends, maintenance, or break-even.
+DB size is a dated current observation; historical size and routine cue-runtime
+trends have no retained measurement path.

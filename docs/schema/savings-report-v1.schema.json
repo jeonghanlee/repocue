@@ -1,0 +1,743 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/savings-report-v1.schema.json",
+  "title": "RepoCue quantitative savings report version 1",
+  "$defs": {
+    "measurement": {
+      "type": "object",
+      "required": [
+        "status",
+        "value",
+        "unit",
+        "basis",
+        "limitations"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "observed",
+            "derived",
+            "estimated",
+            "not_observed"
+          ]
+        },
+        "value": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "not_observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "statistic": {
+      "type": "object",
+      "required": [
+        "status",
+        "unit",
+        "basis",
+        "values",
+        "count",
+        "unknown",
+        "median",
+        "minimum",
+        "maximum",
+        "total",
+        "coverage"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "observed",
+            "derived",
+            "estimated",
+            "not_observed"
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "basis": {
+          "type": "string",
+          "minLength": 1
+        },
+        "values": {
+          "type": "array",
+          "items": {
+            "type": "number"
+          }
+        },
+        "count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "median": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "minimum": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "maximum": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "total": {
+          "type": [
+            "number",
+            "null"
+          ]
+        },
+        "coverage": {
+          "enum": [
+            "complete",
+            "partial",
+            "partial-history"
+          ]
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "window",
+    "historical",
+    "database_schema",
+    "state",
+    "freshness",
+    "live_evidence",
+    "database_size",
+    "database_size_observed_at",
+    "profiles",
+    "calibration",
+    "calibration_digest",
+    "applicability",
+    "activity",
+    "maintenance",
+    "projections",
+    "quality",
+    "unavailable",
+    "time_meanings",
+    "warnings",
+    "limitations"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "repocue/savings-report-1"
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "window": {
+      "type": "object",
+      "required": [
+        "start",
+        "cutoff",
+        "previous_start",
+        "days"
+      ],
+      "properties": {
+        "start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "cutoff": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "previous_start": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "days": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "historical": {
+      "type": "boolean"
+    },
+    "database_schema": {
+      "enum": [
+        2,
+        3
+      ]
+    },
+    "state": {
+      "anyOf": [
+        {
+          "type": "object",
+          "required": [
+            "repository_id",
+            "epoch",
+            "snapshot",
+            "branch",
+            "head",
+            "dirty",
+            "observed_at"
+          ],
+          "properties": {
+            "repository_id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "epoch": {
+              "type": "string",
+              "minLength": 1
+            },
+            "snapshot": {
+              "type": "string",
+              "minLength": 1
+            },
+            "branch": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "head": {
+              "anyOf": [
+                {
+                  "type": "string",
+                  "minLength": 1
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "dirty": {
+              "type": "boolean"
+            },
+            "observed_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "freshness": {
+      "enum": [
+        "current",
+        "dirty-but-indexed",
+        "refresh-needed"
+      ]
+    },
+    "live_evidence": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "fingerprint",
+        "repository_id",
+        "status_digest",
+        "tracked_digest",
+        "untracked_digest",
+        "complete",
+        "observed_at",
+        "duration_ms",
+        "files_read",
+        "bytes_read",
+        "git_commands"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "repocue/content-evidence-1"
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "tracked_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "untracked_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "complete": {
+          "const": true
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "files_read": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bytes_read": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "git_commands": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "database_size": {
+      "$ref": "#/$defs/measurement"
+    },
+    "database_size_observed_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "profiles": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "id",
+          "model",
+          "benchmark",
+          "observed_at"
+        ],
+        "properties": {
+          "id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "model": {
+            "type": "string",
+            "minLength": 1
+          },
+          "benchmark": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "calibration": {
+      "anyOf": [
+        {
+          "$ref": "calibration-v1.schema.json"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "calibration_digest": {
+      "type": "string"
+    },
+    "applicability": {
+      "type": "object",
+      "required": [
+        "status",
+        "reasons",
+        "tracked_file_drift",
+        "tracked_byte_drift",
+        "language_drift"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "not_applicable",
+            "measured_reference",
+            "estimated"
+          ]
+        },
+        "reasons": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "tracked_file_drift": {
+          "type": "integer"
+        },
+        "tracked_byte_drift": {
+          "type": "integer"
+        },
+        "language_drift": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "activity": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "epoch",
+          "observed_at",
+          "operations",
+          "cues"
+        ],
+        "properties": {
+          "epoch": {
+            "type": "string",
+            "minLength": 1
+          },
+          "observed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "operations": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "additionalProperties": {
+                "type": "object",
+                "required": [
+                  "current",
+                  "previous",
+                  "percent"
+                ],
+                "properties": {
+                  "current": {
+                    "$ref": "#/$defs/statistic"
+                  },
+                  "previous": {
+                    "$ref": "#/$defs/statistic"
+                  },
+                  "percent": {
+                    "$ref": "#/$defs/measurement"
+                  }
+                },
+                "additionalProperties": false
+              }
+            }
+          },
+          "cues": {
+            "type": "object",
+            "additionalProperties": {
+              "type": "object",
+              "required": [
+                "current",
+                "previous",
+                "percent"
+              ],
+              "properties": {
+                "current": {
+                  "$ref": "#/$defs/statistic"
+                },
+                "previous": {
+                  "$ref": "#/$defs/statistic"
+                },
+                "percent": {
+                  "$ref": "#/$defs/measurement"
+                }
+              },
+              "additionalProperties": false
+            }
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "maintenance": {
+      "type": "object",
+      "required": [
+        "epoch",
+        "cutoff",
+        "operation_ids",
+        "baseline",
+        "refresh",
+        "total",
+        "limitations"
+      ],
+      "properties": {
+        "epoch": {
+          "type": "string"
+        },
+        "cutoff": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "operation_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "baseline": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/statistic"
+          }
+        },
+        "refresh": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/statistic"
+          }
+        },
+        "total": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/measurement"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "projections": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "consumers",
+          "explicit",
+          "metric",
+          "maintenance",
+          "pairs",
+          "direct",
+          "assisted",
+          "saving",
+          "percent",
+          "finite_break_even"
+        ],
+        "properties": {
+          "consumers": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "explicit": {
+            "type": "boolean"
+          },
+          "metric": {
+            "type": "string",
+            "minLength": 1
+          },
+          "maintenance": {
+            "$ref": "#/$defs/measurement"
+          },
+          "pairs": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "pair_id",
+                "direct",
+                "assisted",
+                "saving",
+                "percent",
+                "break_even"
+              ],
+              "properties": {
+                "pair_id": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "direct": {
+                  "$ref": "#/$defs/measurement"
+                },
+                "assisted": {
+                  "$ref": "#/$defs/measurement"
+                },
+                "saving": {
+                  "$ref": "#/$defs/measurement"
+                },
+                "percent": {
+                  "$ref": "#/$defs/measurement"
+                },
+                "break_even": {
+                  "$ref": "#/$defs/measurement"
+                }
+              },
+              "additionalProperties": false
+            }
+          },
+          "direct": {
+            "$ref": "#/$defs/statistic"
+          },
+          "assisted": {
+            "$ref": "#/$defs/statistic"
+          },
+          "saving": {
+            "$ref": "#/$defs/statistic"
+          },
+          "percent": {
+            "$ref": "#/$defs/statistic"
+          },
+          "finite_break_even": {
+            "$ref": "#/$defs/statistic"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "quality": {
+      "type": "object",
+      "required": [
+        "status",
+        "direct_correctness",
+        "basic_correctness",
+        "correctness_difference",
+        "direct_fact_pass_counts",
+        "basic_fact_pass_counts",
+        "qualitative_basic_minus_direct",
+        "limitations"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "derived",
+            "not_observed"
+          ]
+        },
+        "direct_correctness": {
+          "$ref": "#/$defs/statistic"
+        },
+        "basic_correctness": {
+          "$ref": "#/$defs/statistic"
+        },
+        "correctness_difference": {
+          "$ref": "#/$defs/statistic"
+        },
+        "direct_fact_pass_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "basic_fact_pass_counts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        },
+        "qualitative_basic_minus_direct": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/statistic"
+          }
+        },
+        "limitations": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "unavailable": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/measurement"
+      }
+    },
+    "time_meanings": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "warnings": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "limitations": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "additionalProperties": false
+}

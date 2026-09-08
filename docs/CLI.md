@@ -158,3 +158,133 @@ make uninstall.dry-run
 make uninstall.apply
 make uninstall.check
 ```
+
+## Quantitative Reports
+
+Read a report after initializing the repository; no agent is launched:
+
+```bash
+repocue report --repository .
+repocue report --repository . --window 30d --format markdown
+repocue report --repository . --consumers 7
+repocue report --repository . --as-of 2026-09-01T00:00:00Z
+```
+
+Defaults are JSON, a 30-day UTC window, and 1, 2, 3, 5, and 10-consumer
+scenarios. Positive `--consumers N` adds an explicit scenario. No profile means
+maintenance only. One eligible profile is selected automatically; multiple
+profiles require `--profile <calibration-id>` and otherwise suppress projections.
+An unknown profile or missing/tampered selected artifact is an error.
+
+`--as-of` accepts a non-future RFC3339 UTC instant. State and binding observations
+must be strictly before it. Metric recording time governs activity and full
+epoch maintenance; it is not database publication time. Current validation and
+DB size remain separate current observations. Repeating historical results
+requires the same DB/evidence basis; later retained observations can change
+the result. Missing historical content evidence never comes from today's state.
+
+An unchanged verified binding is `measured_reference`; a compatible later
+snapshot is `estimated` with file/byte/language drift. Stale tracked state,
+a new epoch, incompatible contract, or same-snapshot untracked-content change
+makes the profile `not_applicable`. Report does not refresh. Ordinary refresh
+cannot repair that untracked-content mismatch; renewed authorized evidence is
+needed. Quality is dated source evidence, not a current assessment.
+
+### Import External Calibration
+
+Use a complete compatible direct/basic set from an authorized experiment.
+Substitute your own external paths:
+
+```bash
+reports=/tmp/repocue-pairs
+evidence=/tmp/repocue-pairs/calibration-evidence.json
+repocue calibration import --repository . --reports "$reports" --evidence "$evidence"
+```
+
+Optional `--assessments /absolute/assessment-directory` validates the qualitative
+files named in the evidence. Otherwise semantic quality is not assessed.
+Import binds source content to the local current epoch/snapshot, not to a
+coincidentally equal ID in the evaluator's temporary DB. Producer provenance
+and exact digests are mandatory; historical values are never filled from the
+current binary. The result contains calibration ID, relative path, and digest.
+Reimport is idempotent.
+
+Direct/basic preparation needs no structural oracle:
+
+```bash
+repocue evaluate-m2 --repository . --conditions direct,basic --output-directory /tmp/repocue-pairs
+```
+
+Without `--runner` this emits two dry-run reports, which cannot calibrate agent
+savings. An authorized runner uses the existing `--runner` and `--task-file`
+contract. Output and temporary workspace must remain outside the evaluated
+worktree and Git directory. Import from the generated set directory and its
+`calibration-evidence.json`, not the output parent. Multiple pairs require one
+evidence document naming selected reports and contemporaneous records.
+Import and report never implicitly run a model.
+
+### Atomic Publication Wrapper
+
+Report writes stdout and returns nonzero on failure. Do not redirect over the
+last successful report. Save this optional Bash script as
+`/home/example/bin/repocue-report.bash`, replace its four absolute paths, and
+make it executable. It requires Bash, Git, `flock`, `mktemp`, `mkdir`, and `mv`.
+It creates only its external output directory and retains failed drafts.
+Keep the repository idle during execution. The example installs nothing.
+
+```bash
+#!/bin/bash
+set -euo pipefail
+export PATH=/usr/local/bin:/usr/bin:/bin
+readonly repocue_binary=/home/example/.local/bin/repocue
+readonly repository=/srv/project
+readonly cache=/home/example/.cache/repocue
+readonly report_dir=/home/example/reports/repocue
+umask 077
+mkdir -p -- "$report_dir"
+exec 9>"$report_dir/report.lock"
+flock -n 9 || exit 75
+report_tmp=$(mktemp "$report_dir/.report.XXXXXXXX")
+trap 'status=$?; if (( status != 0 )); then printf "Failed draft: %s\n" "$report_tmp" >&2; fi' EXIT
+trap 'exit 130' INT
+trap 'exit 143' TERM
+"$repocue_binary" report --repository "$repository" --cache-dir "$cache" --format markdown >"$report_tmp"
+test -s "$report_tmp"
+mv -f -- "$report_tmp" "$report_dir/current.md"
+```
+
+After verifying the wrapper manually, a user crontab entry can run it at 06:00:
+
+```text
+0 6 * * * /home/example/bin/repocue-report.bash
+```
+
+An alternative user systemd service and timer use the same lock and publisher:
+
+```ini
+# repocue-report.service
+[Unit]
+Description=Produce a RepoCue quantitative report
+[Service]
+Type=oneshot
+WorkingDirectory=/srv/project
+ExecStart=/home/example/bin/repocue-report.bash
+```
+
+```ini
+# repocue-report.timer
+[Unit]
+Description=Run the RepoCue report daily
+[Timer]
+OnCalendar=daily
+Persistent=true
+Unit=repocue-report.service
+[Install]
+WantedBy=timers.target
+```
+
+Use cron or the timer, not both. Scheduling, permissions, retention, and
+activation remain operator-owned. A held lock returns 75; command failure
+leaves `current.md` unchanged. JSON and Markdown contain the same calculation,
+classifications, and limitations. Markdown includes complete canonical JSON
+as a data appendix.

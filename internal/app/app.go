@@ -10,6 +10,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/jeonghanlee/repocue/internal/cue"
@@ -60,6 +61,8 @@ func init() {
 		{"rebaseline", "[flags]", "Start a new epoch with a full baseline while retaining the superseded epoch", "", App.runRebaseline},
 		{"cue", "[flags]", "Generate a compact repository cue within an estimated token budget", "", App.runCue},
 		{"metrics", "[flags]", "Read recorded baseline, refresh, and cue measurements", "", App.runMetrics},
+		{"calibration", "import [flags]", "Import validated external direct/basic calibration evidence", "Raw evidence remains external; no agent is invoked.", App.runCalibration},
+		{"report", "[flags]", "Report maintained costs and explicitly projected consumer savings", "Read-only; does not refresh, migrate, generate a cue, or invoke an agent.", App.runReport},
 		{"evaluate", "[flags]", "Run the model-neutral direct-versus-assisted repository evaluation",
 			evaluationContractNote, App.runEvaluate},
 		{"evaluate-m2", "[flags]", "Run the five-condition M2 evaluation and publish one report set",
@@ -462,16 +465,21 @@ func (a App) runEvaluateM2(ctx context.Context, args []string) error {
 	outputDirectory := flags.String("output-directory", "", "final report-set parent directory")
 	runIndex := flags.Int("run-index", 1, "positive run index")
 	temporaryRoot := flags.String("temporary-root", "", "evaluation temporary workspace parent")
+	conditions := flags.String("conditions", "", "direct,basic for calibration; default is all five M2 conditions")
 	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
 	if flags.NArg() != 0 {
 		return errors.New("evaluate-m2 accepts flags only")
 	}
+	var selected []string
+	if *conditions != "" {
+		selected = strings.Split(*conditions, ",")
+	}
 	manifest, err := evaluation.RunM2(ctx, evaluation.M2Config{
 		RepositoryPath: *repositoryPath, MaxTokens: *maxTokens, TaskFile: *taskFile,
 		Runner: *runner, OracleTool: *oracleTool, OutputDirectory: *outputDirectory,
-		RunIndex: *runIndex, TemporaryRoot: *temporaryRoot,
+		RunIndex: *runIndex, TemporaryRoot: *temporaryRoot, Conditions: selected,
 	})
 	if err != nil {
 		return err

@@ -19,6 +19,7 @@ import (
 
 	"github.com/jeonghanlee/repocue/internal/benchmark"
 	"github.com/jeonghanlee/repocue/internal/cue"
+	calibrationevidence "github.com/jeonghanlee/repocue/internal/evidence"
 	"github.com/jeonghanlee/repocue/internal/model"
 	"github.com/jeonghanlee/repocue/internal/repository"
 	"github.com/jeonghanlee/repocue/internal/snapshot"
@@ -94,6 +95,8 @@ type M2Config struct {
 	OutputDirectory string
 	RunIndex        int
 	TemporaryRoot   string
+	Conditions      []string
+	CueExecutable   string
 }
 
 type M2Repository struct {
@@ -144,14 +147,15 @@ type M2ConditionReport struct {
 }
 
 type M2Manifest struct {
-	SchemaVersion  string              `json:"schema_version"`
-	Kind           string              `json:"kind"`
-	GeneratedAt    time.Time           `json:"generated_at"`
-	MaintenanceID  string              `json:"maintenance_id"`
-	Repository     M2Repository        `json:"repository"`
-	ConditionOrder []string            `json:"condition_order"`
-	Reports        []M2ConditionReport `json:"reports"`
-	Limitations    []string            `json:"limitations"`
+	SchemaVersion       string                        `json:"schema_version"`
+	Kind                string                        `json:"kind"`
+	GeneratedAt         time.Time                     `json:"generated_at"`
+	MaintenanceID       string                        `json:"maintenance_id"`
+	Repository          M2Repository                  `json:"repository"`
+	ConditionOrder      []string                      `json:"condition_order"`
+	Reports             []M2ConditionReport           `json:"reports"`
+	Limitations         []string                      `json:"limitations"`
+	CalibrationEvidence *calibrationevidence.Document `json:"calibration_evidence,omitempty"`
 }
 
 func ValidM2Condition(condition string) bool {
@@ -164,6 +168,14 @@ func ValidM2Condition(condition string) bool {
 }
 
 func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
+	conditions := append([]string{}, M2Conditions...)
+	calibrationMode := len(config.Conditions) != 0
+	if calibrationMode {
+		if len(config.Conditions) != 2 || config.Conditions[0] != ConditionDirect || config.Conditions[1] != ConditionBasic {
+			return M2Manifest{}, errors.New("selected conditions must be direct,basic")
+		}
+		conditions = append([]string{}, config.Conditions...)
+	}
 	if config.MaxTokens < 1 {
 		return M2Manifest{}, errors.New("evaluation max tokens must be positive")
 	}
@@ -184,12 +196,14 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 			return M2Manifest{}, fmt.Errorf("resolve evaluation task: %w", err)
 		}
 	}
-	if config.OracleTool == "" {
-		return M2Manifest{}, errors.New("a structural oracle tool is required")
-	}
-	config.OracleTool, err = resolveExecutable(config.OracleTool)
-	if err != nil {
-		return M2Manifest{}, fmt.Errorf("resolve structural oracle: %w", err)
+	if !calibrationMode {
+		if config.OracleTool == "" {
+			return M2Manifest{}, errors.New("a structural oracle tool is required")
+		}
+		config.OracleTool, err = resolveExecutable(config.OracleTool)
+		if err != nil {
+			return M2Manifest{}, fmt.Errorf("resolve structural oracle: %w", err)
+		}
 	}
 	repo, err := repository.Open(ctx, config.RepositoryPath)
 	if err != nil {
@@ -232,7 +246,11 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 	if err != nil {
 		return M2Manifest{}, fmt.Errorf("M2 baseline scan: %w", err)
 	}
-	store, err := storage.Open(ctx, filepath.Join(workspace, "state.db"))
+	statePath := filepath.Join(workspace, "state.db")
+	if calibrationMode {
+		statePath = filepath.Join(workspace, "cache", repo.ID, "state.db")
+	}
+	store, err := storage.Open(ctx, statePath)
 	if err != nil {
 		return M2Manifest{}, err
 	}
@@ -276,9 +294,13 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 		return M2Manifest{}, fmt.Errorf("capture M2 repository evidence: %w", err)
 	}
 	oracleStarted := time.Now()
-	oracleCandidates, oracleLimitations, err := runStructuralOracle(ctx, config.OracleTool, repo.Root)
-	if err != nil {
-		return M2Manifest{}, err
+	var oracleCandidates []cue.StructuralCandidate
+	oracleLimitations := []string{}
+	if !calibrationMode {
+		oracleCandidates, oracleLimitations, err = runStructuralOracle(ctx, config.OracleTool, repo.Root)
+		if err != nil {
+			return M2Manifest{}, err
+		}
 	}
 	oracleDuration := time.Since(oracleStarted)
 	if _, err := repo.ValidateSnapshot(ctx, current.Snapshot, current.Files); err != nil {
@@ -295,7 +317,14 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 	if current.Snapshot.Basis.Dirty {
 		freshness = "dirty-but-indexed"
 	}
-	contexts, costs, err := prepareM2Contexts(current, facts, oracleCandidates, freshness, config.MaxTokens)
+	var contexts map[string][]byte
+	var costs map[string]M2CueCost
+	var proof *calibrationevidence.Document
+	if calibrationMode {
+		contexts, costs, proof, err = prepareCalibrationContext(ctx, config, repo, current, workspace, freshness)
+	} else {
+		contexts, costs, err = prepareM2Contexts(current, facts, oracleCandidates, freshness, config.MaxTokens)
+	}
 	if err != nil {
 		return M2Manifest{}, err
 	}
@@ -319,11 +348,26 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 	updateCost := operationCost("no-op", updateWall, updateScan, updateTransition, 0)
 	manifest := M2Manifest{
 		SchemaVersion: M2SchemaVersion, Kind: "m2-condition-set", GeneratedAt: time.Now().UTC(),
-		MaintenanceID: maintenanceID, Repository: repositorySummary, ConditionOrder: append([]string{}, M2Conditions...),
+		MaintenanceID: maintenanceID, Repository: repositorySummary, ConditionOrder: conditions,
 		Reports: []M2ConditionReport{}, Limitations: append([]string{}, oracleLimitations...),
+		CalibrationEvidence: proof,
+	}
+	pairID := fmt.Sprintf("%s-run-%d", maintenanceID, config.RunIndex)
+	if proof != nil {
+		proof.CueCLI[0].PairID = pairID
 	}
 	var runnerIdentity *RunnerMetadata
-	for order, condition := range M2Conditions {
+	for order, condition := range conditions {
+		var before repository.EvidenceCapture
+		if proof != nil {
+			before, err = repo.CaptureEvidence(ctx)
+			if err != nil {
+				return M2Manifest{}, err
+			}
+			if before.Evidence.Fingerprint != proof.Capture.Fingerprint {
+				return M2Manifest{}, errors.New("repository content evidence changed before runner")
+			}
+		}
 		report := M2ConditionReport{
 			SchemaVersion: M2SchemaVersion, Kind: "m2-condition", GeneratedAt: time.Now().UTC(),
 			MaintenanceID: maintenanceID, Condition: condition, ConditionOrder: order + 1, RunIndex: config.RunIndex,
@@ -352,10 +396,22 @@ func RunM2(ctx context.Context, config M2Config) (M2Manifest, error) {
 		if err := validateM2Report(report); err != nil {
 			return M2Manifest{}, err
 		}
+		if proof != nil {
+			after, err := repo.CaptureEvidence(ctx)
+			if err != nil {
+				return M2Manifest{}, err
+			}
+			if after.Evidence.Fingerprint != before.Evidence.Fingerprint {
+				return M2Manifest{}, errors.New("evaluation runner changed repository content evidence")
+			}
+			if err := appendCalibrationReport(proof, report, pairID, before, after); err != nil {
+				return M2Manifest{}, err
+			}
+		}
 		manifest.Reports = append(manifest.Reports, report)
 	}
 	if config.OutputDirectory != "" {
-		if err := writeM2ReportSetAtomic(config.OutputDirectory, manifest.Reports); err != nil {
+		if err := publishM2ReportSet(config.OutputDirectory, manifest.Reports, conditions, proof, contexts[ConditionBasic]); err != nil {
 			return M2Manifest{}, err
 		}
 	}
@@ -700,7 +756,11 @@ func validateM2Report(report M2ConditionReport) error {
 }
 
 func writeM2ReportSetAtomic(directory string, reports []M2ConditionReport) error {
-	if len(reports) != len(M2Conditions) {
+	return publishM2ReportSet(directory, reports, M2Conditions, nil, nil)
+}
+
+func publishM2ReportSet(directory string, reports []M2ConditionReport, conditions []string, proof *calibrationevidence.Document, cueBytes []byte) error {
+	if len(reports) != len(conditions) {
 		return errors.New("M2 report set is incomplete")
 	}
 	if err := os.MkdirAll(directory, 0o755); err != nil {
@@ -724,11 +784,16 @@ func writeM2ReportSetAtomic(directory string, reports []M2ConditionReport) error
 	}
 	defer os.RemoveAll(staging)
 	for index, report := range reports {
-		if report.Condition != M2Conditions[index] || report.MaintenanceID != first.MaintenanceID ||
+		if report.Condition != conditions[index] || report.MaintenanceID != first.MaintenanceID ||
 			report.RunIndex != first.RunIndex || report.Repository.StateFingerprint != first.Repository.StateFingerprint {
 			return errors.New("M2 report set does not share one ordered repository basis")
 		}
 		if err := writeM2ReportFile(filepath.Join(staging, m2ReportName(report, modelName)), report); err != nil {
+			return err
+		}
+	}
+	if proof != nil {
+		if err := writeCalibrationEvidence(staging, proof, cueBytes); err != nil {
 			return err
 		}
 	}

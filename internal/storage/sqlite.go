@@ -15,7 +15,7 @@ import (
 	_ "modernc.org/sqlite"
 )
 
-const schemaVersion = 2
+const schemaVersion = 3
 
 var (
 	ErrAlreadyInitialized = errors.New("RepoCue is already initialized")
@@ -310,8 +310,21 @@ func (s *Store) RecordCue(ctx context.Context, run CueRun) error {
 }
 
 func (s *Store) Metrics(ctx context.Context) (Report, error) {
+	report, err := readMetrics(ctx, s.db)
+	if err != nil {
+		return Report{}, err
+	}
+	report.DatabaseSizeBytes, err = metrics.DatabaseSize(s.path)
+	return report, err
+}
+
+type metricsQuery interface {
+	QueryContext(context.Context, string, ...any) (*sql.Rows, error)
+}
+
+func readMetrics(ctx context.Context, query metricsQuery) (Report, error) {
 	report := Report{Operations: []OperationRun{}, Cues: []CueRun{}}
-	rows, err := s.db.QueryContext(ctx, `SELECT id, operation, epoch_id, snapshot_id, created_at,
+	rows, err := query.QueryContext(ctx, `SELECT id, operation, epoch_id, snapshot_id, created_at,
 		duration_ms, scan_duration_ms, git_commands, files_scanned, bytes_scanned, changed_file_count
 		FROM operation_runs ORDER BY sequence`)
 	if err != nil {
@@ -335,7 +348,7 @@ func (s *Store) Metrics(ctx context.Context) (Report, error) {
 	if err := rows.Err(); err != nil {
 		return Report{}, err
 	}
-	cueRows, err := s.db.QueryContext(ctx, `SELECT id, view, snapshot_id, since_snapshot_id, created_at,
+	cueRows, err := query.QueryContext(ctx, `SELECT id, view, snapshot_id, since_snapshot_id, created_at,
 		max_tokens, output_bytes, estimated_tokens FROM cue_runs ORDER BY sequence`)
 	if err != nil {
 		return Report{}, err
@@ -361,8 +374,7 @@ func (s *Store) Metrics(ctx context.Context) (Report, error) {
 	if err := cueRows.Err(); err != nil {
 		return Report{}, err
 	}
-	report.DatabaseSizeBytes, err = metrics.DatabaseSize(s.path)
-	return report, err
+	return report, nil
 }
 
 func (s *Store) configure(ctx context.Context) error {
@@ -411,6 +423,9 @@ func (s *Store) ensureSchema(ctx context.Context) error {
 				return fmt.Errorf("migrate SQLite schema to version 2: %w", err)
 			}
 		}
+	}
+	if _, err := tx.ExecContext(ctx, calibrationSchema); err != nil {
+		return fmt.Errorf("migrate SQLite schema to version 3: %w", err)
 	}
 	if _, err := tx.ExecContext(ctx, fmt.Sprintf("PRAGMA user_version = %d", schemaVersion)); err != nil {
 		return err

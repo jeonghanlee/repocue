@@ -3,7 +3,7 @@
 ## Scope
 
 This document defines the component boundaries and data flow for the accepted
-Go core and the M2 structural-context experiment.
+Go core, the M2 structural-context experiment, and quantitative reporting.
 
 **Out of scope:** MCP, production source parsing, semantic embeddings, LLM
 processing, filesystem watching, checkpoints, pruning, and retention-policy
@@ -64,8 +64,8 @@ RepoCue could not claim current freshness.
   when the live state differs from the current snapshot.
 - Token estimation is `ceil(serialized UTF-8 bytes / 4)`. It is explicitly an
   estimate and is stored with the exact output byte count.
-- SQLite schema version 2 records scan duration and Git command count. Schema
-  version 1 migrates through an explicit transaction.
+- SQLite schema version 3 adds calibration references. Versions 1 and 2
+  migrate transactionally; read-only reports accept versions 2 and 3.
 
 ## Transaction Boundary
 
@@ -193,3 +193,38 @@ condition sets that do not share identical runner metadata.
 The default build remains CGo-free. Linux static linking and Windows amd64
 cross-building are release constraints. A future structural backend must be
 measured against those constraints before it becomes a production dependency.
+
+## Quantitative Reporting Boundary
+
+`internal/evidence` defines external calibration provenance and contained,
+digest-checked file references. `repository.CaptureEvidence` adds streamed
+non-ignored untracked content to Git and tracked-file evidence without changing
+core refresh scope. Unreadable entries prevent a complete capture; symlinks
+contribute target text, not target contents.
+
+Explicit `evaluate-m2 --conditions direct,basic` measures the shipped cue
+executable and supplies its captured stdout to the assisted runner. It records
+wall duration, cache/hint state, executable digest, and digest-linked Git
+Trace2 process sessions. Builder duration is a separate diagnostic. This path
+needs no oracle; the default five-condition experiment remains unchanged.
+
+`internal/reporting` validates complete compatible external pairs, recomputes
+the five deterministic Git facts, optionally joins qualitative assessments,
+and publishes compact numeric calibration. Raw answers, prompts, scoring
+basis, and assessment narratives remain external. SQLite serializes
+publication and rechecks the expected local snapshot. A failed transaction can
+leave an unreferenced artifact, never a trusted partial reference.
+
+Reports read state, history, and references in one read-only transaction, then
+validate live content. They never refresh, migrate, write cue metrics, invoke
+an agent, or store stdout. Source snapshot IDs are provenance, not local DB
+identity. Exact content matches are measured references; compatible later
+snapshots are estimates. Epoch/contract or same-snapshot untracked-content
+mismatches suppress projections. Quality remains dated calibration evidence.
+
+Reuse arithmetic is pairwise and unit-specific. Historical state uses
+observation time; activity and full-epoch maintenance use metric recording
+time. Neither proves SQLite publication time. Missing measurements and
+ambiguous legacy zeros cannot become observed savings. See
+[ADR 0002](adr/0002-quantitative-reporting.md) and
+[Evaluation](EVALUATION.md#quantitative-reporting).

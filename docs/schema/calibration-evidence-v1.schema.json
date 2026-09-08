@@ -1,0 +1,620 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/calibration-evidence-v1.schema.json",
+  "title": "RepoCue calibration source evidence version 1",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "producer",
+    "cue",
+    "profile",
+    "capture",
+    "reports",
+    "scoring",
+    "cue_cli",
+    "assessments",
+    "records"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "repocue/calibration-evidence-1"
+    },
+    "producer": {
+      "type": "object",
+      "required": [
+        "revision",
+        "executable_digest",
+        "modified",
+        "module_version"
+      ],
+      "properties": {
+        "revision": {
+          "type": "string",
+          "pattern": "^[a-f0-9]{40,64}$"
+        },
+        "executable_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "modified": {
+          "type": "boolean"
+        },
+        "module_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "cue": {
+      "type": "object",
+      "required": [
+        "view",
+        "schema_version",
+        "max_tokens",
+        "selection_policy"
+      ],
+      "properties": {
+        "view": {
+          "const": "overview"
+        },
+        "schema_version": {
+          "const": "repocue/1"
+        },
+        "max_tokens": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "selection_policy": {
+          "const": "repocue/basic-overview-1"
+        }
+      },
+      "additionalProperties": false
+    },
+    "profile": {
+      "type": "object",
+      "required": [
+        "tracked_files",
+        "tracked_bytes",
+        "languages"
+      ],
+      "properties": {
+        "tracked_files": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "tracked_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "languages": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "integer",
+            "minimum": 0
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "capture": {
+      "type": "object",
+      "required": [
+        "algorithm",
+        "fingerprint",
+        "repository_id",
+        "status_digest",
+        "tracked_digest",
+        "untracked_digest",
+        "complete",
+        "observed_at",
+        "duration_ms",
+        "files_read",
+        "bytes_read",
+        "git_commands"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "repocue/content-evidence-1"
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "tracked_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "untracked_digest": {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        "complete": {
+          "const": true
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "files_read": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bytes_read": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "git_commands": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "additionalProperties": false
+    },
+    "reports": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "digest",
+          "pair_id",
+          "condition",
+          "run_index",
+          "snapshot",
+          "state_fingerprint",
+          "before",
+          "after"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "pair_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "condition": {
+            "enum": [
+              "direct",
+              "basic"
+            ]
+          },
+          "run_index": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "snapshot": {
+            "type": "string",
+            "minLength": 1
+          },
+          "state_fingerprint": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "before": {
+            "type": "object",
+            "required": [
+              "algorithm",
+              "fingerprint",
+              "repository_id",
+              "status_digest",
+              "tracked_digest",
+              "untracked_digest",
+              "complete",
+              "observed_at",
+              "duration_ms",
+              "files_read",
+              "bytes_read",
+              "git_commands"
+            ],
+            "properties": {
+              "algorithm": {
+                "const": "repocue/content-evidence-1"
+              },
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "repository_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "tracked_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "untracked_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "complete": {
+                "const": true
+              },
+              "observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "duration_ms": {
+                "type": "number",
+                "minimum": 0
+              },
+              "files_read": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "bytes_read": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "git_commands": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          },
+          "after": {
+            "type": "object",
+            "required": [
+              "algorithm",
+              "fingerprint",
+              "repository_id",
+              "status_digest",
+              "tracked_digest",
+              "untracked_digest",
+              "complete",
+              "observed_at",
+              "duration_ms",
+              "files_read",
+              "bytes_read",
+              "git_commands"
+            ],
+            "properties": {
+              "algorithm": {
+                "const": "repocue/content-evidence-1"
+              },
+              "fingerprint": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "repository_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "tracked_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "untracked_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "complete": {
+                "const": true
+              },
+              "observed_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "duration_ms": {
+                "type": "number",
+                "minimum": 0
+              },
+              "files_read": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "bytes_read": {
+                "type": "integer",
+                "minimum": 0
+              },
+              "git_commands": {
+                "type": "integer",
+                "minimum": 0
+              }
+            },
+            "additionalProperties": false
+          }
+        },
+        "additionalProperties": false
+      },
+      "minItems": 2
+    },
+    "scoring": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "report_digest",
+          "basis",
+          "scorer_revision",
+          "scored_at"
+        ],
+        "properties": {
+          "report_digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "basis": {
+            "type": "object",
+            "required": [
+              "branch",
+              "head",
+              "dirty",
+              "staged",
+              "unstaged",
+              "untracked",
+              "index_digest",
+              "status_digest",
+              "working_tree_digest",
+              "observed_at"
+            ],
+            "properties": {
+              "branch": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "head": {
+                "type": [
+                  "string",
+                  "null"
+                ]
+              },
+              "dirty": {
+                "type": "boolean"
+              },
+              "staged": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "unstaged": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "untracked": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "index_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "status_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "working_tree_digest": {
+                "type": "string",
+                "pattern": "^sha256:[a-f0-9]{64}$"
+              },
+              "observed_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": false
+          },
+          "scorer_revision": {
+            "type": "string",
+            "minLength": 1
+          },
+          "scored_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "passed": {
+            "type": "integer",
+            "minimum": 0,
+            "maximum": 5
+          },
+          "total": {
+            "const": 5
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "cue_cli": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "pair_id",
+          "executable_digest",
+          "arguments",
+          "cache_state",
+          "location_hint_state",
+          "started_at",
+          "completed_at",
+          "exit_status",
+          "output_digest",
+          "output_bytes",
+          "estimated_tokens",
+          "snapshot",
+          "freshness",
+          "duration_ms",
+          "git_invocations",
+          "git_status"
+        ],
+        "properties": {
+          "pair_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "executable_digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "arguments": {
+            "type": "array",
+            "items": {
+              "type": "string",
+              "minLength": 1
+            }
+          },
+          "cache_state": {
+            "type": "string",
+            "minLength": 1
+          },
+          "location_hint_state": {
+            "type": "string",
+            "minLength": 1
+          },
+          "started_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "completed_at": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "exit_status": {
+            "const": 0
+          },
+          "output_digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "output_bytes": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "estimated_tokens": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "snapshot": {
+            "type": "string",
+            "minLength": 1
+          },
+          "freshness": {
+            "enum": [
+              "current",
+              "dirty-but-indexed"
+            ]
+          },
+          "duration_ms": {
+            "type": "number",
+            "minimum": 0
+          },
+          "git_invocations": {
+            "type": [
+              "integer",
+              "null"
+            ],
+            "minimum": 0
+          },
+          "git_status": {
+            "enum": [
+              "observed",
+              "not_observed"
+            ]
+          },
+          "git_trace_digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "assessments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "digest",
+          "report_digest",
+          "response_id",
+          "assessed_at"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "report_digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          },
+          "response_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "assessed_at": {
+            "type": [
+              "string",
+              "null"
+            ],
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "records": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "path",
+          "digest"
+        ],
+        "properties": {
+          "path": {
+            "type": "string",
+            "minLength": 1
+          },
+          "digest": {
+            "type": "string",
+            "pattern": "^sha256:[a-f0-9]{64}$"
+          }
+        },
+        "additionalProperties": false
+      }
+    }
+  },
+  "additionalProperties": false
+}
