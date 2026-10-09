@@ -70,6 +70,8 @@ func init() {
 			evaluationContractNote, App.runEvaluateM2},
 		{"evaluate-task", "[flags] | summary [flags]", "Prepare task context, explicitly run one pair, or summarize retained attempts",
 			"Task contracts and evidence are separate from direct/basic calibration.", App.runEvaluateTask},
+		{"evaluate-cache", "<prepare|run|summary> [flags]", "Prepare stable context, explicitly send one Claude request, or summarize retained evidence",
+			"Independent Claude usage and USD estimates; no implicit provider execution.", App.runEvaluateCache},
 	}
 }
 

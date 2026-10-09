@@ -1,0 +1,18 @@
+{
+  "schema_version": "repocue/cache-benchmark-1",
+  "id": "original-context-cache",
+  "task_kind": "discovery",
+  "context_file": "docs/task-context.example.json",
+  "targets": ["internal/cue"],
+  "rubric": "Identify all required original item and source identities; assess instruction compliance independently.",
+  "max_context_tokens": 12000,
+  "provider": {"model": "claude-sonnet-4-6", "api_version": "2023-06-01", "ttl": "5m"},
+  "limits": {"max_requests": 4, "max_output_tokens": 1024, "timeout_ms": 60000, "max_response_bytes": 1048576},
+  "steps": [
+    {"id": "baseline-a", "pair_id": "discovery", "arm": "baseline", "condition": "baseline", "prompt": "Identify the required original context."},
+    {"id": "baseline-b", "pair_id": "discovery", "arm": "baseline", "condition": "baseline", "prompt": "Identify the required original context."},
+    {"id": "cache-a", "pair_id": "discovery", "arm": "cache", "condition": "create", "prompt": "Identify the required original context."},
+    {"id": "cache-b", "pair_id": "discovery", "arm": "cache", "condition": "reuse", "prompt": "Identify the required original context."}
+  ],
+  "rates": null
+}

@@ -1,0 +1,221 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/cache-benchmark-v1.schema.json",
+  "title": "cache-benchmark",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "repocue/cache-benchmark-1"
+    },
+    "id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,47}$"
+    },
+    "task_kind": {
+      "enum": [
+        "discovery",
+        "explanation"
+      ]
+    },
+    "context_file": {
+      "type": "string",
+      "minLength": 1
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "uniqueItems": true,
+      "minItems": 1
+    },
+    "rubric": {
+      "type": "string",
+      "minLength": 1
+    },
+    "max_context_tokens": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 2000000
+    },
+    "provider": {
+      "type": "object",
+      "properties": {
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "api_version": {
+          "const": "2023-06-01"
+        },
+        "ttl": {
+          "enum": [
+            "5m",
+            "1h"
+          ]
+        }
+      },
+      "required": [
+        "model",
+        "api_version",
+        "ttl"
+      ],
+      "additionalProperties": false
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "max_requests": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 32
+        },
+        "max_output_tokens": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 65536
+        },
+        "timeout_ms": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 300000
+        },
+        "max_response_bytes": {
+          "type": "integer",
+          "minimum": 64,
+          "maximum": 8388608
+        }
+      },
+      "required": [
+        "max_requests",
+        "max_output_tokens",
+        "timeout_ms",
+        "max_response_bytes"
+      ],
+      "additionalProperties": false
+    },
+    "steps": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,47}$"
+          },
+          "pair_id": {
+            "type": "string",
+            "pattern": "^[a-z][a-z0-9-]{0,47}$"
+          },
+          "arm": {
+            "enum": [
+              "baseline",
+              "cache",
+              "probe"
+            ]
+          },
+          "condition": {
+            "enum": [
+              "baseline",
+              "create",
+              "reuse",
+              "changed-prefix",
+              "expiry"
+            ]
+          },
+          "prompt": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": [
+          "id",
+          "pair_id",
+          "arm",
+          "condition",
+          "prompt"
+        ],
+        "additionalProperties": false
+      },
+      "minItems": 1,
+      "maxItems": 32
+    },
+    "rates": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "as_of": {
+              "type": "string",
+              "format": "date"
+            },
+            "unit": {
+              "const": "usd_per_million_tokens"
+            },
+            "model": {
+              "type": "string",
+              "minLength": 1
+            },
+            "api_version": {
+              "const": "2023-06-01"
+            },
+            "input": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$"
+            },
+            "write_5m": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$"
+            },
+            "write_1h": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$"
+            },
+            "read": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$"
+            },
+            "output": {
+              "type": "string",
+              "pattern": "^(0|[1-9][0-9]{0,11})(\\.[0-9]{1,12})?$"
+            }
+          },
+          "required": [
+            "id",
+            "as_of",
+            "unit",
+            "model",
+            "api_version",
+            "input",
+            "write_5m",
+            "write_1h",
+            "read",
+            "output"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "task_kind",
+    "context_file",
+    "targets",
+    "rubric",
+    "max_context_tokens",
+    "provider",
+    "limits",
+    "steps",
+    "rates"
+  ],
+  "additionalProperties": false
+}

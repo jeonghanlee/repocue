@@ -8,6 +8,7 @@
 - [Data Model](DATA_MODEL.md)
 - [Evaluation](EVALUATION.md)
 - [Task Context Contracts](TASK_CONTEXT.md)
+- [Prompt Cache Evaluation](PROMPT_CACHING.md)
 - [Task Context Benchmark](benchmarks/task-context-v1.md)
 - [Current Status](CURRENT_STATUS.md)
 - [M3 Quantitative Savings Report](milestone-10a4f02.md)
@@ -15,3 +16,4 @@
 - [ADR 0001: Structural Analysis Backends](adr/0001-structural-analysis-backends.md)
 - [ADR 0002: Quantitative Reporting](adr/0002-quantitative-reporting.md)
 - [ADR 0003: Original Task Context](adr/0003-task-context-delivery-and-evidence.md)
+- [ADR 0004: Provider Prompt Caching](adr/0004-provider-prompt-caching.md)

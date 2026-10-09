@@ -3,7 +3,8 @@
 ## Scope
 
 This document is the canonical work register for quantitative reporting,
-repository calibration, and task-specific context delivery and measurement.
+repository calibration, task-specific context delivery and measurement,
+and provider prompt-caching integration.
 
 **Out of scope:** Implementation or external agent execution before their
 separate authorization, and every feature listed in the M1 and M2 exclusions.
@@ -15,7 +16,7 @@ Canonical branch or ref: master
 Git upstream: origin/master
 Remote tracker: none
 
-Next session entry point: prepare the exact G3 model/settings/rates/evidence/budget and first-pair conditions for User acceptance. M4 implementation is landed in edd3dc23203f9b79c6cff9b9103a156716299549 with corrected T1-T8 and post-EOF fixture verification. M5 remains Blocked by Open G3; its draft plan and paid execution require separate acceptance and authorization. The separate M2 / G1 calibration remains unchanged.
+Next session entry point: accept the independently reviewed Sonnet 5.5 support P008-P009 (plan20261009_092451) and the Codex CLI companion P010-P011 (plan20261009_160442), then record their local implementation authority. The User selected Codex CLI alongside Sonnet on 2026-10-09. Codex uses existing M5 overview/task measurement; Claude API uses M6. The two-request G6 pilot and USD 0.10 allowance remain proposed, not authorized, and do not apply to Codex. Completed local M6 P001-P006 authority does not cover these new proposals. No real-provider request or savings observation exists. M5/G3 and M6/G6 remain separately Blocked/Open; publication needs separate authority. M2/G1 is unchanged.
 
 ## Milestone
 
@@ -32,6 +33,9 @@ Next session entry point: prepare the exact G3 model/settings/rates/evidence/bud
 | Task context | G2 | Independent review session configuration | External gate | Complete | No | | User confirmed L size, Mode B, two independent Reviewers and root coordination/implementation; publication remains separately authorized; [detail](#g2---independent-review-session-configuration) |
 | Task context | G3 | Task-context experiment conditions and cost authorization | External gate | Open | No | | Authorize exact model, basis, run count, rate record, evidence location, and spending stop conditions; [detail](#g3---task-context-experiment-conditions-and-cost-authorization) |
 | Task context | G4 | Named task-context plan acceptance and implementation authorization | External gate | Complete | No | | User accepted plan20261008_052832 and authorized P001-P007 on 2026-10-08; [detail](#g4---named-task-context-plan-acceptance-and-implementation-authorization) |
+| Prompt caching | M6 | Claude API prompt-caching integration and measurement | Milestone | Blocked | No | M4, G5, G6, D26-D30 | An opt-in adapter submits reusable context with cache controls and retains verified usage, request duration, cost estimates and task quality; [detail](#m6---claude-api-prompt-caching-integration-and-measurement) |
+| Prompt caching | G5 | Prompt-caching plan acceptance and implementation authorization | External gate | Complete | No | | User accepted and authorized local plan20261009_075715; two detailed-contract cross-checks found no blocker; [detail](#g5---prompt-caching-plan-acceptance-and-implementation-authorization) |
+| Prompt caching | G6 | Claude API experiment conditions and cost authorization | External gate | Open | No | | Authorize exact provider/model, cache conditions, dated rates, evidence location, run limits and spending controls; [detail](#g6---claude-api-experiment-conditions-and-cost-authorization) |
 
 ### Decisions
 
@@ -1439,6 +1443,12 @@ the exact real-model execution conditions and spending authorization; resume
 as Not started. D25-D30 apply. The existing M2 / G1 experiment remains a
 separate work identity with its original conditions and authorization.
 
+Decision Date: 2026-10-09. The User requested Codex alongside Sonnet 5.5 and
+selected Codex CLI. Use the existing overview/task comparison and credit
+accounting. Do not add OpenAI API calls or import Claude cache-write accounting.
+CLI selection does not select a model or authorize paid execution. Existing
+runner usage and retained-input contracts remain unchanged.
+
 ##### Implementation Plan
 
 Plan Status: draft
@@ -1462,6 +1472,39 @@ Superseded Plan Artifacts: none
 6. After first-stage evidence, prepare a separately authorized continued-
    conversation experiment if required. A multi-turn runner and fixed turn
    sequence need their own plan; fresh-session results cannot substitute.
+
+###### Proposed Codex CLI Companion
+
+Plan Status: draft
+Plan Acceptance: none
+Implementation Authorization: none
+Superseded Plan Artifacts: none
+
+Named additive proposal: plan20261009_160442 under
+`work/review_sessions/20261009_072038_prompt-caching/plan/`. P010 documents the
+existing CLI measurement alongside Claude API evaluation in
+`docs/PROMPT_CACHING.md` and `docs/EVALUATION.md`. P011 runs actual no-model
+preparation for the first explanation A/B pair and records M5 / T1 evidence.
+It preserves the original six-step M5 plan, balanced nine-pair schedule,
+source pins, task-first prompt, runner and public schemas. Both items remain
+unaccepted and unauthorized; no model run or successful preflight is claimed.
+
+The measurements are total input, cached-input subset, output, optional
+reasoning-output subset, complete dated credit estimate, cue/adapter duration,
+supported commands, delivery and independent correctness. Cache counters
+alone do not identify cached source text or establish causal cache savings.
+CPU, memory, I/O, task-ready time and account billing remain unavailable.
+Codex CLI executions can contain multiple provider requests. No TTL, explicit
+cache boundary, output-token cap or hard billing ceiling is added. G3 still
+requires exact model/settings, applicable account rates, assessment and
+spending authority. Sonnet's proposed USD allowance does not apply.
+
+Proposal review observed at 2026-10-09 16:21:55 UTC: C1 rsp20261009_161608 and
+C2 rsp20261009_161706 each completed their first review of this companion
+with zero findings and zero blockers. conv20261009_162155 records the result.
+Plan acceptance/local authority remain pending; M5 T1-T4 are still Not run.
+Actual proposal-document build and diff checks passed at 16:07:46 UTC.
+No model, successful preflight, cache saving or account charge was observed.
 
 ##### Test Plan
 
@@ -1585,6 +1628,533 @@ implementation authorization are recorded separately in M4.
 - User acceptance and implementation authorization on 2026-10-08, recorded in
   `work/review_sessions/20261008_050539_task-context/plan/auth20261008_072718_codex_gpt6_root.md`; both independent correction reports were read before authorization.
 
+#### M6 - Claude API Prompt-Caching Integration And Measurement
+
+Origin: 10a4f02 / M6
+Identity History: none
+GitHub Issue: none
+Status: Blocked
+
+##### Summary
+
+Add optional Claude API prompt-caching support around RepoCue context delivery.
+The provider maintains the actual model-side cache. RepoCue prepares reusable
+context, sends cache controls through an explicit adapter, and measures the
+observed usage, request duration, estimated API cost and task quality.
+The User accepted the reviewed local plan and separately authorized P001-P006
+implementation on 2026-10-09. Paid execution remains separately gated by G6.
+
+##### Scope
+
+- Separate a deterministic reusable context prefix from changing task input,
+  repository-state metadata and timestamps. Preserve required original sources,
+  applicability, freshness and digest checks; a real source change must change
+  the corresponding reusable content.
+- Add an opt-in Claude API adapter that controls the actual submitted request
+  and places `cache_control` at the intended reusable boundary. The provider
+  requires a matching prefix and applies model/platform-specific minimum lengths
+  and cache lifetimes [3]; cue output alone does not establish a cache hit.
+- Retain exact submitted content, selected model/API settings, prefix identity,
+  raw response usage, request timings, failures and missing measurements.
+- Measure ordinary input, cache creation by applicable lifetime, cache reads
+  and output separately. Define provider-specific accounting before mapping to
+  shared reports; existing Codex input-subset semantics remain unchanged.
+- Compare an uncached baseline, initial cache creation and subsequent reuse
+  under matched task/context/settings. Include changed-prefix and expiry
+  conditions, and classify each attempt from observed provider counters.
+
+Out of scope: implementing the provider's model-side cache locally, controlling
+existing Codex or Claude Code sessions, requiring a provider for ordinary CLI
+use, replacing original context with LLM summaries, changing M2/G1 or M5/G3,
+automatic paid retries, and claiming Codex-credit or account-billing savings
+from Claude API estimates.
+
+##### Completion Criteria
+
+- The real adapter submits the intended reusable prefix and changing suffix;
+  unchanged content is byte-stable and source changes preserve correctness.
+- Raw usage retains the provider's distinct ordinary-input, cache-write,
+  cache-read and output counters. Full-input totals count each category once;
+  missing or incompatible counters suppress dependent estimates. Claude usage
+  semantics are checked against the applicable official contract [3].
+- Cost estimates use the selected model's dated rates, including cache-write
+  lifetime differences, cache reads and outputs. Report initial creation cost,
+  repeated-use totals and observed reuse count separately; no universal price
+  multiplier or assumed hit is accepted.
+- Authorized real-provider evidence establishes cache creation and reuse, plus
+  changed-prefix and expiry behavior, from actual usage and timing observations.
+  Retain every attempted request and task result. Local transport fixtures
+  establish software handling only, not real cache behavior or savings.
+- Paired comparisons retain source delivery and task correctness alongside
+  efficiency. Missing quality evidence prevents an overall improvement claim;
+  request duration is not labeled task-ready latency or account billing.
+- Versioned compatibility, optional network use, Go implementation, CGo-free
+  Linux static builds and Windows cross-builds are preserved.
+
+##### Dependencies And Decisions
+
+M4 supplies original-source task context and retained evidence boundaries.
+G5 owns acceptance and implementation authority for the new integration plan;
+G6 independently owns paid Claude API conditions and cost authority. G5 is
+Complete; G6 is Open. Local implementation is authorized and locally verified; resume as
+In progress after all external gates complete. D26-D30 apply.
+Registration alone does not select a model, API version, TTL, schema, run count
+or budget. The User selected Sonnet 5.5 on 2026-10-09; proposed local support
+and paid conditions below still require their separate acceptance and authority.
+The User selected M6 plan preparation as the current priority on
+2026-10-09. Implementation and experiment order relative to M2 or M5 remains
+unassigned.
+
+##### Implementation Plan
+
+Plan Status: accepted
+Plan Acceptance: 2026-10-09; reviewed M6 local plan, serialized by plan20261009_075715
+Implementation Authorization: 2026-10-09; explicit User implementation request, approval and continuation, recorded by auth20261009_075715; local P001-P006 only
+Superseded Plan Artifacts: none
+
+Accepted revision: 2026-10-09, plan20261009_075715. The User accepted this
+reviewed architecture and authorized local P001-P006 implementation after
+requesting implementation. auth20261009_075715 records that direction.
+Independent detailed-contract cross-checks rsp20261009_080519 and
+rsp20261009_080505 found zero confirmed blockers. The exact local field,
+CLI and HTTP-limit details are in the named plan. G6 remains separate.
+
+###### Premise And Boundary
+
+| Class | Premise | Current Evidence | Planning Treatment |
+| --- | --- | --- | --- |
+| Confirmed constraint | Existing task transport and settings identify Codex, and task cost subtracts cached input from total input. | `internal/taskbenchmark/benchmark.go`: Settings, Usage and Transport; `internal/evaluation/task_cost.go`: TaskCredit | Add independent Claude contracts and USD estimates; never reinterpret the legacy fields. |
+| Confirmed constraint | Current task prompts place the changing task before the complete cue, whose envelope contains snapshot and Git metadata. | `internal/evaluation/task_attempt.go`: taskPrompt; `internal/cue/task.go`: TaskEnvelope | Assemble a separate provider request from the validated cue, with stable context first and current provenance after the cache boundary. |
+| Confirmed constraint | Existing retained-task verification binds the exact full cue and submitted prompt. | `internal/evaluation/task_integrity.go`: verifyTaskPair and verifyTaskAttempt | Preserve the old path and add separate reconstruction checks for the split Claude request. |
+| Hypothesis | A stable prefix will reduce repeated-request cost for the selected model and task. | Provider rules [3]; no RepoCue real-provider observations | Test under G6. Do not treat prompt equality, local fixtures or a requested cache policy as a measured hit or saving. |
+| Pending external authority | The User selected Sonnet 5.5; exact pilot conditions and costs are proposed, not authorized. | G6 remains Open; Sonnet 5.5 extension below | Freeze prepared identities and account scope after authorized local support; never infer paid authority from model selection. |
+
+The accepted local slice is text context delivery and structured answers for
+source identification or source-backed explanation. It does not build a
+coding-agent runtime: repository writes, shell execution, client/server tools,
+streaming, background warming and autonomous conversations are excluded.
+Verification-command tasks remain unsupported in this slice and must not
+receive fabricated completion evidence. G5 accepted these boundaries on
+2026-10-09; the existing M5 task types and runner remain unchanged.
+
+###### Contracts And Data Flow
+
+Use Go standard-library HTTP behind an opt-in evaluation command. Keep the
+core cue generator and SQLite content-free; do not add a provider SDK or
+parser runtime dependency. Public contracts are independent of
+task-runner-1, task-evaluation-1 and direct/basic calibration:
+
+| Contract | Embedded File | Responsibility |
+| --- | --- | --- |
+| repocue/cache-benchmark-1 | `docs/schema/cache-benchmark-v1.schema.json` | Task selectors, quality policy, provider settings, cache conditions and dated USD-per-million-token rates |
+| repocue/cache-request-1 | `docs/schema/cache-request-v1.schema.json` | Frozen context, wire request, expected answer schema, condition identity and digests |
+| repocue/cache-observation-1 | `docs/schema/cache-observation-v1.schema.json` | Actual HTTP completion, raw response identity, nullable usage, timings and errors |
+| repocue/cache-answer-1 | `docs/schema/cache-answer-v1.schema.json` | Task identity, required item IDs, claims with original-source IDs and uncertainty |
+| repocue/cache-evaluation-1 | `docs/schema/cache-evaluation-v1.schema.json` | Preparation, attempt inventory, bound assessments, rates, derived metrics and summary |
+
+The implemented local flow is:
+
+```text
+evaluate-cache preparation
+  -> real refresh and cue --view task CLI
+  -> freeze complete cue, repository evidence and answer schema
+  -> deterministic prefix and current task/provenance suffix
+  -> retain request body and digests without a network request
+explicit run of one frozen step
+  -> attempt-start journal and repository check
+  -> Claude Messages API request
+  -> retain raw response, timing, usage and failure state
+  -> post-request repository check
+summary
+  -> validate retained artifacts and reconstruct delivery
+  -> calculate usage, USD estimates and quality outcomes without a process or network request
+```
+
+The reusable prefix contains a fixed context-handling instruction and the
+selected item/source records, including original text, full-file/range identity
+and text digests. Sort deterministically; do not trim, summarize or silently
+drop required text. Put repository-derived text in a user content block as
+source material, preserving runtime instruction authority. Place an explicit
+cache boundary after that block. Current task text, task/target selectors,
+snapshot, branch/HEAD, freshness, observation time, budget and omission
+accounting stay in the following suffix. Retain the complete original cue
+separately; do not send the original source text twice. Unrelated Git metadata
+changes may preserve prefix bytes, but must never bypass fresh source validation.
+
+Freeze the system instruction, answer schema, model and request settings
+across a comparable sequence. Hash the full reusable sequence, not just one
+source block. A changed selected source or declaration pin changes that
+identity; a local digest does not prove provider cache availability.
+Account for the assembled request envelope when enforcing the context budget.
+The existing byte-based estimate is not the model's cache-minimum tokenizer.
+
+The direct Messages API supports explicit content-block cache controls and
+non-streaming requests [4]. Use one complete response per explicit run,
+with no tool or follow-up loop. Use a small provider-compatible answer schema
+through `output_config.format` [5], retained and digest-bound before launch.
+Validate the original frozen answer contract locally as well; provider schema
+support never establishes source correctness or semantic compliance.
+Unsupported selected-model/schema combinations stop preflight rather than
+silently removing constraints or launching another request.
+
+###### File-Level Steps
+
+The P labels below are local to M6. P001-P006 are implemented in the local
+worktree and verified below. P007 remains blocked by G6. Paths marked new
+identify files introduced by this implementation; no landing is established.
+
+| Plan Item | Files Or Subsystem | Intended Change | Verification |
+| --- | --- | --- | --- |
+| P001 | New `docs/adr/0004-provider-prompt-caching.md`; new `docs/schema/cache-*.schema.json`; schema contract tests | Promote the accepted provider/context/accounting decision; embed strict independent contracts and compatible public examples. Reject duplicate/unknown fields, trailing input and incompatible versions without changing existing schemas. | M6 / T1, T9 |
+| P002 | New `internal/promptcache/context.go` and tests; existing `internal/cue` and `internal/taskcontext` APIs consumed unchanged | Decode a real task cue, assemble byte-stable prefix and current suffix, and validate required item/source coverage and total budget. Preserve exact original text and source freshness. | M6 / T2, T3 |
+| P003 | New `internal/claudeadapter/client.go`, request/response handling and tests | Send the frozen non-streaming request with Go HTTP; load the API key only for explicit execution, keep credentials out of artifacts, reject redirects and retain bounded response/error bytes. Use context cancellation and one logical request, with no application retry. | M6 / T4 |
+| P004 | New `internal/promptcache/usage.go`, `cost.go` and tests | Normalize disjoint Claude counters and lifetime-specific cache writes. Validate nullable counters, aggregate consistency, bounds and compatible dated decimal rates; calculate USD estimates without calling TaskCredit. | M6 / T5 |
+| P005 | New `internal/evaluation/cache.go`, attempt/integrity/summary handling and tests | Freeze preparation, journal before launch, retain all failures and pre/post repository evidence, validate captured wire delivery and answer-schema identity, and summarize only retained data. Bind quality assessments to source, answer, task and attempt digests. | M6 / T6, T7 |
+| P006 | New `internal/app/cache_evaluation.go` and shipped-path tests; command table in `internal/app/app.go`; `docs/CLI.md`, `docs/EVALUATION.md`, new `docs/PROMPT_CACHING.md`, `docs/SUMMARY.md` | Expose proposed evaluate-cache preparation, explicit run and read-only summary. Preparation needs no key or network; each run identifies one frozen step and enforces its request-count/output-token/time limits. Document unsupported measurements and the real API contract. | M6 / T1-T7, T9 |
+| P007 | External G6 evidence; M6 Test Plan, Verification Results and Closure Evidence | After local checks and separate paid authority, collect the initial bounded requests and any separately continued baseline/change/expiry conditions. Report all attempts, matched costs and quality; obtain independent acceptance before M6 closure. | M6 / T8, T9 |
+
+Detailed HTTP limits, exact schema fields, CLI flags and public examples are
+recorded by accepted plan20261009_075715 and docs/PROMPT_CACHING.md. The locally
+built binary exposes these commands. Existing schema/module/storage source is
+unchanged, and regression checks passed. Local integration uses the actual
+CLI, source extraction, SQLite and HTTP adapter with only an outer TLS server.
+
+###### Usage And Cost Rules
+
+Retain the provider fields without converting absence to zero:
+`input_tokens`, `cache_creation_input_tokens`, `cache_read_input_tokens`,
+`output_tokens`, and available `cache_creation` lifetime counters [3]. Check
+that the lifetime sum agrees with aggregate cache creation when both exist.
+For a request with a single frozen TTL, use that declared lifetime only when
+the captured request and response establish a compatible interpretation;
+otherwise lifetime-specific cost remains unavailable.
+
+```text
+total_input = ordinary_input + cache_write_5m + cache_write_1h + cache_read
+estimated_usd = (ordinary_input * ordinary_rate
+               + cache_write_5m * write_5m_rate
+               + cache_write_1h * write_1h_rate
+               + cache_read * read_rate
+               + output * output_rate) / 1000000
+```
+
+When lifetime detail is unavailable, total input may still use the observed
+aggregate cache-creation counter exactly once; cost needs a valid lifetime
+allocation. Reject negative counters, overflow, incompatible units, model or
+rate basis, and invalid rates. Cache creation is not counted again as ordinary
+input, and aggregate writes are never added to their lifetime breakdown.
+Reasoning details, if supported, remain an output subset and are not added twice.
+
+Observed cache reads greater than zero establish reused tokens for that
+request. Writes and reads may coexist. Zero observed cache activity does not
+identify its cause; missing counters do not establish a miss. Preserve actual
+response model, completion/stop state and supported request identity. A failed
+or truncated answer can still incur usage; retain that cost separately from
+task success. Missing complete usage suppresses full-attempt and sequence
+cost totals instead of publishing a favorable subtotal.
+
+Measure full request wall time and preparation/CLI duration separately;
+non-streaming requests do not establish time to first token. Account billing,
+CPU, memory, filesystem I/O and task-ready latency remain not_observed.
+Compare complete matched cache-off request cycles against cache creation plus
+all observed reuses, including initial write and output costs. Report per-pair
+differences before descriptive aggregates and separate correctness. Changed
+prefix and expiry probes are separate conditions, not extra favorable samples.
+An observed saving applies only to the frozen conditions and reuse count.
+
+###### G5 And G6 Execution Boundaries
+
+G5 must accept the current named plan before local implementation begins.
+G6 is separate authority for paid requests and is required for M6 completion;
+it is not authority to modify code. M6 remains Blocked while either required
+gate is Open. If separately authorized local work begins while G6 is Open,
+record the actual partial progress and change the saved resume status to
+In progress. Local P001-P006 progress and verification are recorded below.
+
+Propose an initial two-request cache-creation/reuse pilot under exact G6
+conditions. Observe its actual counters; the first request is not guaranteed
+to be cold. That pilot alone cannot establish savings against a baseline.
+Further baseline, changed-prefix and expiry requests require the agreed
+continuation decision and a frozen schedule. Record request start times and
+the latest observed cache access when judging TTL conditions; no automatic
+sleep, warming, retry or continuation runs in the background.
+The full request count, model/API versions, TTL/minimum length, workspace
+scope, output limits, dated rates, assessment policy and spending controls
+remain pending G6. A token or request limit is not a guaranteed billing cap.
+
+###### Proposed Sonnet 5.5 Extension
+
+Plan Status: draft
+Plan Acceptance: none
+Implementation Authorization: none
+Superseded Plan Artifacts: none
+
+Decision Date: 2026-10-09. The User selected `claude-sonnet-5-5` [6] during
+execution-plan preparation. This additive proposal does not supersede the
+accepted P001-P006 plan or its completed observations. That authorization does
+not cover this profile extension. Named proposal: plan20261009_092451 under
+`work/review_sessions/20261009_072038_prompt-caching/plan/`; its attachment
+`sonnet55-pilot.json` is proposed configuration, not a prepared request.
+
+The current supported-model list excludes Sonnet 5.5. Its default adaptive
+thinking also differs from the current single-text-answer contract. Proposed
+fixed settings are `thinking.type=between_tools` and
+`output_config.effort=high`; without tools this model returns text [7].
+Structured JSON remains the existing format [5]. Include these settings in
+reusable identity and retain exact older profiles' wire bytes and identities.
+
+| Plan Item | Files | Intended Change | Verification |
+| --- | --- | --- | --- |
+| P008 | `internal/promptcache/types.go`, `context.go` | Add only the exact Sonnet 5.5 profile and fixed thinking/effort fields; omit new fields for older models; unknown profiles still fail before HTTP. | Proposed extension of M6 / T1, T2, T4, T6 |
+| P009 | `internal/app/cache_evaluation_test.go`, `docs/PROMPT_CACHING.md`, `docs/adr/0004-provider-prompt-caching.md` | Exercise real CLI prepare/run/summary with only outer TLS substituted; capture exact profile, preserve legacy bytes, retain failed usage/cost and document fixed settings. | Proposed extension of M6 / T1-T7, T9 |
+
+Order: P008, P009 and local checks, real no-network preparation, exact G6 paid
+approval, then the bounded pilot portion of P007. Exact local commands remain
+the Planned Commands below; use `GOCACHE=/tmp/repocue-m6-go-build` in this
+environment. Capture old wire/prefix identities from the real current path
+before editing. New tests must fail on the missing profile/settings rather
+than reconstructing the answer through an internal substitute. Current
+recorded 4.x results do not establish Sonnet 5.5 support. No source padding,
+adaptive thinking/tool runtime, public schema, module or storage change is
+proposed. Material scope changes require a renewed plan and authority.
+
+Proposal review observed at 2026-10-09 16:21:55 UTC: C1 rsp20261009_161608 and
+C2 rsp20261009_161706 each completed their first review of P008-P009 and the
+pilot conditions with zero findings and zero blockers. conv20261009_162155 records
+that review only. P008-P009 acceptance/local authority and G6 paid authority
+remain pending; no new profile verification or provider request occurred.
+
+Preparation verification observed at 2026-10-09 09:29:12 UTC: the real existing
+`build/bin/repocue evaluate-cache prepare` with the proposed benchmark exited 1
+with `model has no supported frozen structured-output profile`. The API key
+was removed from that process environment. DecodeSpec rejects before output
+directory creation and HTTP; no prepared evidence directory exists. This is
+the observed missing-support preflight, not a Sonnet 5.5 integration pass.
+`make docs.build` exited 0 for the updated plan document. `git diff --check`
+passed; the staged path list remained empty. The existing 25-file product
+digest remained
+`2fd82ca60fef4df964fc6b4abaf8e59eb19c721dc6ee6db04c53ee60f9d9abb6`.
+The proposal attachment's JSON parameter checks passed; actual successful
+preparation and Sonnet checks remain Pending. No broad source tests were
+repeated for this documentation-only preparation.
+
+###### Planned Commands
+
+These commands identify verification targets; observed results are below.
+Cache-specific orchestration checks reside in the actual shipped CLI tests
+under internal/app, including T6 and T7, rather than an evaluation-package
+TestCache filter with no matching tests. Existing evaluation regressions still
+run through make check and make test.race.
+
+| Check | Command |
+| --- | --- |
+| M6 / T1, T2, T3, T5 | `go test ./internal/promptcache -count=1` |
+| M6 / T4 | `go test ./internal/claudeadapter -count=1` |
+| M6 / T6, T7 | `go test ./internal/app -run '^TestCacheEvaluationShipped' -count=1` |
+| M6 / T1-T7 | `go test ./internal/app -run '^TestCacheEvaluationShipped' -count=1` |
+| M6 / T9 | `make check` |
+| M6 / T9 | `make test.race` |
+| M6 / T9 | `make build.repocue build.linux-amd64 build.windows-amd64` |
+| M6 / T9 | `make docs.build` |
+| M6 / T9 | `git diff --check` |
+
+T8 commands are prepared only after exact G6 conditions exist. Build checks
+must inspect the actual Linux ELF/no-INTERP and Windows PE artifacts; a Windows
+cross-build does not establish native Windows execution.
+
+##### Test Plan
+
+| Label | Layer | Method | Environment | Expected Result |
+| --- | --- | --- | --- | --- |
+| T1 | Contracts | Embedded schema and strict parser tests plus actual CLI dispatch/preparation | New versioned fixtures and real built CLI; no key/network | Unknown/duplicate/trailing/incompatible inputs fail; no legacy contract changes or implicit paid request |
+| T2 | Stable context | Shipped task-cue CLI through actual prefix/suffix assembly, repeating sources while changing task and Git metadata | Real Git/SQLite/filesystem | Same selected content gives stable prefix bytes; current metadata remains in suffix; original text appears once |
+| T3 | Source integrity | Actual refresh/extraction and request preparation with changed pins, missing sources, symlinks, invalid ranges and mandatory budget overflow | Real Git/SQLite/source fixtures; HTTP boundary observed | No stale or incomplete successful request; source changes alter identity; zero provider launches on preflight failure |
+| T4 | HTTP adapter | Built CLI through real adapter with only the outer HTTP transport replaced | Local TLS HTTP server; exact request capture, 4xx/5xx, partial body, cancellation and redirect fixtures | Correct frozen body/boundary/schema; one logical request without application retry; raw failures retained and credentials excluded |
+| T5 | Accounting | Actual normalization and summary path for ordinary/write/read/mixed counters, lifetime sums, missing data, bounds and rates | Raw response fixtures carried through the adapter | Input/write categories counted once; compatible USD estimates or explicit unavailable results; unsuccessful task costs retained |
+| T6 | Retained evidence | Shipped preparation/run/summary paths with tampered request, prefix, schema, response, assessment, directory aliases and changed repository state | Real files, CLI, Git/SQLite; only outer HTTP boundary substituted | Every attempt retained; incompatible evidence blocks comparison; summary launches no provider/process and does not mutate evidence |
+| T7 | Quality | Actual submitted-content reconstruction and locally validated source-ID answers with bound independent assessments | Retained wire request/answer and original source references | Complete required delivery and separate correctness/compliance; malformed, wrong and unassessed answers stay visible; no command execution claim |
+| T8 | Real provider | Authorized baseline, creation, reuse, changed-prefix and expiry requests with matched task results | Exact G6 Claude API/model/settings and budget | Cache activity supported by raw counters; complete matched costs/durations/quality or explicit unavailable findings |
+| T9 | Regression | Real package/race checks, existing legacy contracts, Linux static/Windows cross-build inspection and docs build | Go and actual generated artifacts; no provider required | Existing behavior and distribution constraints preserved; Windows runtime and provider savings not inferred |
+
+##### Verification Results
+
+| Label | Observed At | Environment | Result | Evidence |
+| --- | --- | --- | --- | --- |
+| T1 | 2026-10-09 08:55:36 UTC | Go 1.27.1; embedded schemas and built CLI | Passed | Final make check and make test.race: five independent schemas, valid public examples, unknown versions/fields, duplicate/trailing JSON, unsupported model/API/count and incompatible dated rates; legacy schemas unchanged |
+| T2 | 2026-10-09 08:55:36 UTC | Real Git/SQLite/task-cue/HTTP capture | Passed | TestCacheEvaluationShippedStablePrefixFreshnessAndBudget and FullCycleAndReadOnlySummary: stable prefix across changed prompt/Git basis; original sources once before boundary; source changes alter prefix |
+| T3 | 2026-10-09 08:55:36 UTC | Real tracked source and preflight path | Passed | Missing/pin/range/symlink/mandatory and full-envelope budget failures; old prepared basis cannot launch HTTP; no source substitution |
+| T4 | 2026-10-09 08:55:36 UTC | Built CLI and actual adapter; outer local TLS server | Passed | Frozen request/header/cache boundary/schema capture; 400/500, redirect, deadline, partial/oversized/malformed/trailing response, model mismatch and credential-echo retention rules; no retry; distinct absolute HTTP times survive attempted failures and remain null before HTTP |
+| T5 | 2026-10-09 08:55:36 UTC | Raw TLS responses through actual summary; strict arithmetic unit cases | Passed | Ordinary/write/read and mixed 5m/1h counters; nullable/zero/bounds/lifetime checks; exact decimal USD, retained failed costs and unknown totals; initial/subsequent cost and observed reuse count separated |
+| T6 | 2026-10-09 08:55:36 UTC | Shipped preparation/run/summary and actual files | Passed | Tampered benchmark/cue/schema/request/wire/response/assessment and HTTP interval/duration/null fields, aliases, pre/post basis changes and killed CLI journal remain invalid/visible; summary succeeds with repository unavailable and PATH/key empty, without changing evidence |
+| T7 | 2026-10-09 08:55:36 UTC | Actual wire/answer/source and bound assessment fixtures | Passed | Required delivery distinct from correctness/compliance; wrong/unassessed/explanation answers and rejected assessment bindings remain visible; independent negative discovery assessment cannot be ignored; no observed reuse means no savings verdict |
+| T8 | Not run | Actual Claude API | Pending | G6 remains Open |
+| T9 | 2026-10-09 08:55:36 UTC | Linux Go 1.27.1; actual build/doc artifacts | Passed locally | Final make check and make test.race passed after timing correction; build.repocue, build.linux-amd64, build.windows-amd64 and docs.build exited 0 at 08:51:22 UTC; file/readelf inspection at 08:53:50 UTC showed static Linux ELF without INTERP and Windows amd64 PE32+; go mod tidy -diff and git diff --check passed; native Windows and provider behavior not tested |
+
+##### Closure Evidence
+
+- Local P001-P006 implementation and final T1-T7/T9 checks exist in the
+  uncommitted worktree. Both independent implementation lanes accepted the
+  corrected target with zero remaining blockers.
+- Initial implementation reviews: C1 rev20261009_084615 accepted its lane;
+  C2 rev20261009_084722 found F-codex_gpt6_cache_c2-001, dropped absolute HTTP
+  timestamps needed for TTL evidence. The approved timing retention path is
+  corrected and validated through the real CLI. Follow-ups fup20261009_085524
+  (C1) and fup20261009_085910 (C2) independently verify that correction and
+  accept the local implementation; each is review 2, the single correction
+  cycle. Final full checks also passed after correction. Root rechecked the
+  reviewed 25-file product digest at 2026-10-09 09:01:06 UTC:
+  2fd82ca60fef4df964fc6b4abaf8e59eb19c721dc6ee6db04c53ee60f9d9abb6.
+- G6 / T8 remains pending. No real-provider request, cache observation, account
+  billing or real savings result exists. Synthetic TLS values verify software
+  behavior only. M6 remains Blocked; no commit, push or landing evidence exists.
+- ADR promotion: docs/adr/0004-provider-prompt-caching.md; operational contract:
+  docs/PROMPT_CACHING.md. G5 acceptance does not authorize paid execution.
+
+#### G5 - Prompt-Caching Plan Acceptance And Implementation Authorization
+
+Origin: 10a4f02 / G5
+GitHub Issue: none
+Status: Complete
+
+##### Summary
+
+Responsible party: User. Affected work: M6. Accept the reviewed integration
+plan, including the API boundary, reusable context rules, versioned evidence
+and provider-specific accounting, then separately authorize implementation.
+The request to register this milestone supplies neither acceptance nor
+implementation authority. G6 remains the independent paid-execution gate.
+
+##### Completion Criteria
+
+- The current named plan is reviewed and accepted, with unresolved API,
+  context, schema, credential and measurement decisions made explicit.
+- Review the M6 draft revision dated 2026-10-09, including the proposed
+  text-only API slice, independent contracts, P001-P007 and T1-T9. Independent
+  design/measurement review precedes acceptance; this drafting action supplies
+  no such acceptance.
+- Implementation authorization is recorded separately from plan acceptance.
+  Material changes require renewed acceptance and authorization.
+
+##### Verification Results
+
+| Observed At | Result | Evidence |
+| --- | --- | --- |
+| 2026-10-09 07:40:53 UTC | Pending | Independent draft reviews rev20261009_073105 and rev20261009_073440 completed with zero confirmed findings; conv20261009_073953 records convergence. Detailed contract choices, final named plan acceptance and implementation authorization remain unresolved |
+| 2026-10-09 08:08:21 UTC | Passed | User accepted the reviewed M6 plan and separately authorized local implementation; plan20261009_075715 and auth20261009_075715 record the scope. Detailed-contract rsp20261009_080519 and rsp20261009_080505 independently found zero confirmed blockers. G6 paid authority remains excluded |
+
+The reviewed M6/G5/G6 draft had SHA-256 `a0aa66695f01ada5541510c09f3dac53b56d6035832972e0c0d74b05d5d9b81b`.
+The two final reports and convergence are under
+`work/review_sessions/20261009_072038_prompt-caching/`. This observation changes
+neither the M6 plan nor its draft/acceptance/authorization fields at that earlier
+observation. At that time all M6 / T1-T9 remained Pending and no implementation,
+paid request or saving was established. Current local observations are in M6.
+At the earlier observation, exact schema fields/examples, CLI flags and HTTP
+limits remained unresolved. The later accepted named plan serializes those
+details within the reviewed architecture. Decision Date: 2026-10-09. The
+original local P001-P006 implementation is authorized. The later Sonnet 5.5 selection
+does not authorize the proposed P008-P009 profile extension or G6 paid calls.
+
+##### Closure Evidence
+
+- Decision Date: 2026-10-09. Accepted plan20261009_075715 and separately
+  authorized local P001-P006 through auth20261009_075715. G6 remains excluded.
+
+#### G6 - Claude API Experiment Conditions And Cost Authorization
+
+Origin: 10a4f02 / G6
+GitHub Issue: none
+Status: Open
+
+##### Summary
+
+Responsible party: User. Affected work: M6 / T8. Authorize the exact paid
+Claude API experiment independently of local implementation. Freeze provider
+and model/API versions, repository/task/prefix identity, cache policy and TTL,
+model minimum length, request order/count, dated API rates, evidence location,
+task-quality assessment, spending controls and continuation conditions.
+
+##### Completion Criteria
+
+- Exact executable conditions distinguish baseline, write, reuse, changed
+  prefix and expiry observations. No hit or miss is inferred from request
+  order alone; the collection path retains provider usage and failed attempts.
+- The User authorizes the initial bounded request set and its maximum planned
+  cost. State any inability to enforce a hard billing ceiling; a run-count
+  checkpoint is not a guaranteed spending cap. No automatic retry follows.
+- Subsequent paid requests require the agreed continuation decision. G1 and
+  G3 do not authorize this provider or experiment.
+
+##### Verification Results
+
+| Observed At | Result | Evidence |
+| --- | --- | --- |
+| Not run | Pending | Sonnet 5.5 selected on 2026-10-09; exact two-request conditions, dated rates and USD 0.10 allowance proposed below; no paid authority, prepared request or provider observation |
+
+##### Proposed Initial Execution Conditions
+
+Proposal Date: 2026-10-09. Acceptance: none. Paid Execution Authorization: none.
+Named proposal: plan20261009_092451. Sonnet 5.5 local support P008-P009 must be
+accepted, authorized and verified before actual preparation. The existing
+binary rejects the selected model locally; no executable Sonnet request has
+been prepared. G6 remains Open and M6 / T8 remains Pending.
+
+| Parameter | Proposed condition |
+| --- | --- |
+| Provider / model / API | First-party Claude API / claude-sonnet-5-5 / 2023-06-01 |
+| Endpoint | https://api.anthropic.com/v1/messages |
+| Cache / profile | Explicit first-block ephemeral 5m; between_tools; high effort; existing structured JSON; no tools or streaming |
+| Context | Real discovery cue; docs/task-context.example.json; target internal/cue; required repository-context item with original full README.md once |
+| Schedule / limits | cache-create then cache-reuse; maximum two attempts; 512 output tokens, 60000 ms, 1048576 retained response bytes per request; full-wire local byte estimate limited to 8000 tokens |
+| Evidence | Unique canonical non-linked child under /tmp/repocue-sonnet55-pilot; retain complete artifacts before temporary-storage cleanup |
+| Prices | USD per million tokens, as of 2026-10-09: input 2.00, 5m write 2.50, 1h write 4.00, read 0.10, output 10.00 [8]; standard global first-party conditions |
+| Allowance | Proposed USD 0.10; no enforced hard billing ceiling; paid approval pending |
+
+Recheck README.md digest
+`sha256:7ffa93ebe3f4cd35a600443026f79f8476b18e885bcb48bf5635e41faa15669e`
+and declaration digest
+`sha256:8f2d88708fc9afac9ce2a3a6b9a21881f9dc0e35028b703b6b83ec36fc924d59`
+at real preparation. Freeze actual dirty repository basis, source/schema/
+benchmark/wire/prefix identities and executable after all local changes.
+Resolve and record the already initialized maintained cache root; no implicit
+init, rebaseline, copy or repair. Confirm one workspace/key scope for both
+requests without retaining the credential. Exact prepared identities and that
+operator confirmation remain prerequisites for paid authorization.
+
+Sonnet 5.5 has a 512-token cache minimum [6]. RepoCue's byte estimate does not
+prove eligibility. Do not add filler or request token counting implicitly.
+After the first response, summarize and stop on HTTP/answer/basis failure,
+unknown cost, incomplete usage, model mismatch, timeout, no observed cache
+activity or total input above the 8000-token planning scenario. Retain the
+failed attempt. For conditional continuation, reprice the observed first total
+input as full 5m write plus 512 output tokens; first observed cost plus that
+second-call reserve must fit USD 0.10. This checkpoint is not a bill guarantee.
+
+If separately authorized to continue, send the second request after the first
+completes, preferably within 60 seconds, and before the first observed cache
+write/read HTTP start plus five minutes. TTL starts at request start [3]. Stop
+if the window cannot be met. No retry, automatic wait/warming, replacement
+preparation or additional call is included. The first request may already read
+cache; report actual counters, never infer cold creation or reuse from order.
+
+Illustrative no-hit scenario: two requests, each with 8000 actual input tokens
+all priced as 5m writes and 512 output tokens, cost
+`2 * (8000 * 2.50 + 512 * 10.00) / 1000000 = USD 0.05024` [8]. This is a
+conditional planning calculation, not observed usage, an invoice or a billing
+bound. Actual provider tokenization/formatting overhead and account conditions
+remain unverified.
+
+Retain all attempts and separate source delivery, discovery ID correctness,
+claim correctness and instruction compliance. Missing independent assessment
+remains not_observed; no paid assessor is included. This pilot can establish
+observed cache activity only. It has no matched baseline and leaves the full
+baseline/change/expiry checks, savings, billing, task-ready latency and M6
+closure unestablished. Further requests require a separate exact continuation
+plan and authority.
+
+##### Closure Evidence
+
+- none
+
 ## Backlog
 
 ### Work
@@ -1601,3 +2171,15 @@ No unassigned work is recorded.
 [1] OpenAI. "Pricing." ChatGPT Learn. Accessed: Sep. 8, 2026. [Online]. Available: https://learn.chatgpt.com/docs/pricing
 
 [2] OpenAI. "GPT-5.6 Luna Model." OpenAI API. Accessed: Sep. 8, 2026. [Online]. Available: https://developers.openai.com/api/docs/models/gpt-5.6-luna
+
+[3] Anthropic. "Prompt caching." Claude Platform Docs. Accessed: Oct. 8, 2026. [Online]. Available: https://platform.claude.com/docs/en/build-with-claude/prompt-caching
+
+[4] Anthropic. "Create a Message." Claude API Reference. Accessed: Oct. 9, 2026. [Online]. Available: https://platform.claude.com/docs/en/api/messages/create
+
+[5] Anthropic. "Structured outputs." Claude Platform Docs. Accessed: Oct. 9, 2026. [Online]. Available: https://platform.claude.com/docs/en/build-with-claude/structured-outputs
+
+[6] Anthropic. "Claude Sonnet 5.5." Claude Platform Docs. Accessed: Oct. 9, 2026. [Online]. Available: https://platform.claude.com/docs/en/models/sonnet-5-5/overview
+
+[7] Anthropic. "Claude Sonnet 5.5 migration guide." Claude Platform Docs. Accessed: Oct. 9, 2026. [Online]. Available: https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide
+
+[8] Anthropic. "Pricing." Claude Platform Docs. Accessed: Oct. 9, 2026. [Online]. Available: https://platform.claude.com/docs/en/about-claude/pricing

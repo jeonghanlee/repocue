@@ -282,3 +282,19 @@ The [task benchmark reference](benchmarks/task-context-v1.md) defines the
 three examples, fixed nine-pair schedule, independent assessment bindings,
 provider evidence limitations, and paid preflight. Canonical M5 / G3 retains
 model, policy, rates, spending, evidence, and pilot-continuation decisions.
+
+## Independent provider prompt-cache comparison
+
+`evaluate-cache` uses separate cache-benchmark/request/observation/answer/
+evaluation versions. Preparation freezes deterministic original context and
+exact wire bytes. Each explicit run sends one bounded non-streaming Claude
+request and retains failure evidence. Summary is read-only and recomputes raw
+usage and quality; legacy calibration and Codex credit contracts are unchanged.
+
+Compare complete compatible baseline/cache cycles including initial writes and
+outputs. Usage categories are disjoint and nullable; optional supplied decimal
+USD rates are dated and model/API specific. Known unsuccessful cost is retained,
+and unknown attempts suppress complete totals. Cache intentions do not establish
+hits. Savings verdicts require observed reuse and complete successful quality
+with bound independent compliance assessments. See [Prompt Cache Evaluation](PROMPT_CACHING.md)
+for source boundaries, local fixture limits, contracts, and explicit commands.

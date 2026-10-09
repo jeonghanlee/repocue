@@ -1,0 +1,54 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/cache-request-v1.schema.json",
+  "title": "cache-request",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "repocue/cache-request-1"
+    },
+    "step_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,47}$"
+    },
+    "benchmark_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "cue_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "answer_schema_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "basis_fingerprint": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "prefix_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "wire_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "wire_body": {
+      "type": "string"
+    }
+  },
+  "required": [
+    "schema_version",
+    "step_id",
+    "benchmark_digest",
+    "cue_digest",
+    "answer_schema_digest",
+    "basis_fingerprint",
+    "prefix_digest",
+    "wire_digest",
+    "wire_body"
+  ],
+  "additionalProperties": false
+}

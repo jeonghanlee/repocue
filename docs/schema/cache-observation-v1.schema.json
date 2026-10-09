@@ -1,0 +1,145 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/cache-observation-v1.schema.json",
+  "title": "cache-observation",
+  "type": "object",
+  "properties": {
+    "http_attempted": { "type": "boolean" },
+    "request_written": { "type": "boolean" },
+    "http_started_at": { "type": ["string", "null"], "format": "date-time" },
+    "http_finished_at": { "type": ["string", "null"], "format": "date-time" },
+    "endpoint": { "type": "string", "minLength": 1 },
+    "schema_version": {
+      "const": "repocue/cache-observation-1"
+    },
+    "step_id": {
+      "type": "string",
+      "pattern": "^[a-z][a-z0-9-]{0,47}$"
+    },
+    "request_digest": {
+      "type": "string",
+      "pattern": "^sha256:[a-f0-9]{64}$"
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "finished_at": {
+      "anyOf": [
+        {
+          "type": "string",
+          "format": "date-time"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "before": {
+      "anyOf": [
+        {
+          "$ref": "https://repocue.local/schema/task-evaluation-v1.schema.json#/$defs/evidence"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "after": {
+      "anyOf": [
+        {
+          "$ref": "https://repocue.local/schema/task-evaluation-v1.schema.json#/$defs/evidence"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "duration_ms": {
+      "anyOf": [
+        {
+          "type": "number",
+          "minimum": 0
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "http_status": {
+      "anyOf": [
+        {
+          "type": "integer",
+          "minimum": 100,
+          "maximum": 599
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "request_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "response_digest": {
+      "anyOf": [
+        {
+          "type": "string",
+          "pattern": "^sha256:[a-f0-9]{64}$"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "body_complete": {
+      "type": "boolean"
+    },
+    "status": {
+      "enum": [
+        "started",
+        "completed",
+        "failed"
+      ]
+    },
+    "error": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "http_attempted",
+    "request_written",
+    "http_started_at",
+    "http_finished_at",
+    "endpoint",
+    "schema_version",
+    "step_id",
+    "request_digest",
+    "started_at",
+    "finished_at",
+    "before",
+    "after",
+    "duration_ms",
+    "http_status",
+    "request_id",
+    "response_digest",
+    "body_complete",
+    "status",
+    "error"
+  ],
+  "additionalProperties": false
+}

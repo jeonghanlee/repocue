@@ -1,0 +1,8 @@
+{
+  "schema_version": "repocue/cache-answer-1",
+  "task_id": "original-context-cache",
+  "required_ids": ["repository-context"],
+  "source_ids": ["illustrative-source-identity"],
+  "claims": [{"text": "Original source identities must match the prepared cue.", "source_ids": ["illustrative-source-identity"]}],
+  "uncertainties": ["This schema example is not an observed provider answer."]
+}

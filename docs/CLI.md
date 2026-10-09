@@ -359,3 +359,12 @@ Optional `--assessment-file` joins bound source-backed assessments.
 Summary retains wrong/incomplete attempts, known/unknown metric coverage,
 paired differences, and independent delivery/correctness/compliance fields.
 Task evidence cannot enter `calibration import`.
+
+## Explicit prompt-cache evaluation
+
+`evaluate-cache prepare` freezes original task context and bounded Claude
+request settings without a key or provider request. `run` explicitly sends
+one selected step. `summary` reads retained artifacts without a process or
+network request. None of these commands runs an agent tool or repository command
+from a model answer. The [prompt-cache reference](PROMPT_CACHING.md) defines
+all flags, examples, supported profiles, evidence, and measurement limits.
