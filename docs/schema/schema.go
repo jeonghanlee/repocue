@@ -13,6 +13,12 @@ import (
 //go:embed *.schema.json
 var contracts embed.FS
 
+// Contract returns an embedded contract for an external provider that requires
+// a schema file. The embedded filesystem never reads the user's repository.
+func Contract(name string) ([]byte, error) {
+	return contracts.ReadFile(name)
+}
+
 func Validate(name string, serialized []byte) error {
 	compiler := jsonschema.NewCompiler()
 	compiler.AssertFormat()

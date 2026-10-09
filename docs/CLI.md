@@ -288,3 +288,74 @@ activation remain operator-owned. A held lock returns 75; command failure
 leaves `current.md` unchanged. JSON and Markdown contain the same calculation,
 classifications, and limitations. Markdown includes complete canonical JSON
 as a data appendix.
+
+## Task context and evaluation
+
+Task delivery requires a tracked declaration and explicit applicability inputs.
+The [task contract](TASK_CONTEXT.md) defines pins, range bytes, and whole units.
+
+| Flag | Task cue behavior |
+| --- | --- |
+| --view task | Select the independent task-cue-1 envelope |
+| --context-file | Required canonical repository-relative declaration |
+| --task-kind | Required name from the declaration's registry |
+| --target | Required target; repeat for union selection |
+| --max-tokens | Full envelope estimate budget; mandatory overflow fails |
+| --repository, --cache-dir | Existing repository/cache selection |
+
+Task flags fail with legacy views. Task mode rejects `--since` and `--path`,
+including explicitly empty values. Refresh-needed state fails. A matching
+dirty snapshot is valid. Source failures and mandatory overflow produce no
+successful cue stdout.
+
+For the tracked example, generate a discovery cue with original README text:
+
+```bash
+context=docs/task-context.example.json
+repocue cue --view task --context-file "$context" --task-kind discovery --target internal/cue --max-tokens 5000
+```
+
+Use an initialized idle checkout containing the committed example declaration.
+The result has required ID `repository-context` and a full-file README digest.
+
+Default task evaluation prepares both contexts without an external agent:
+
+```bash
+repocue evaluate-task --task-file <task_file> --output-directory <external_directory>
+```
+
+`<task_file>` is task-benchmark-1 JSON. `<external_directory>` is outside the
+evaluated checkout. Preparation uses the maintained cache and refreshes it;
+an uninitialized cache fails. The task file selects its declaration, targets,
+prompt, policy, and common budget.
+
+| Evaluation flag | Meaning |
+| --- | --- |
+| --runner | Explicit executable; omission launches no agent |
+| --order | overview,task or task,overview; exactly one pair |
+| --model, --reasoning-effort | Required explicit runner settings |
+| --codex-binary | Provider executable; default codex |
+| --speed-tier | Declared standard or fast setting |
+| --rates-file | Optional dated compatible credit rates; omission means unknown cost |
+| --cue-binary | Actual cue CLI; default this executable |
+| --repository, --cache-dir | Evaluated checkout and maintained cache |
+
+The runner receives an exact task-runner-1 request through
+`REPOCUE_TASK_RUNNER_CONFIG` and `REPOCUE_EVAL_SCHEMA`. The shipped runner
+dispatches this version separately from legacy evaluation. Real provider
+support and paid settings require the [experiment preflight](benchmarks/task-context-v1.md).
+
+A unique external pair directory retains partial and completed records.
+A failed pair exits nonzero and can emit its evidence report on stdout.
+A failure never authorizes another invocation, retry, or continuation.
+
+Summarize retained attempts without launching a process:
+
+```bash
+repocue evaluate-task summary --input-directory <external_directory>
+```
+
+Optional `--assessment-file` joins bound source-backed assessments.
+Summary retains wrong/incomplete attempts, known/unknown metric coverage,
+paired differences, and independent delivery/correctness/compliance fields.
+Task evidence cannot enter `calibration import`.

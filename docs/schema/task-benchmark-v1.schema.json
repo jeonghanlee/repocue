@@ -1,0 +1,284 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/task-benchmark-v1.schema.json",
+  "title": "RepoCue task-benchmark-v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "repocue/task-benchmark-1"
+    },
+    "id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_kind": {
+      "enum": [
+        "explanation",
+        "discovery",
+        "verification"
+      ]
+    },
+    "context_file": {
+      "type": "string",
+      "minLength": 1,
+      "pattern": "^[^\\\\:]+$"
+    },
+    "targets": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "pattern": "^[^\\\\:]+$"
+      },
+      "minItems": 1
+    },
+    "max_tokens": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "prompt": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policy": {
+      "anyOf": [
+        {
+          "type": "object",
+          "properties": {
+            "id": {
+              "type": "string",
+              "minLength": 1
+            },
+            "required_pairs": {
+              "type": "integer",
+              "minimum": 1
+            },
+            "rubric": {
+              "type": "string",
+              "minLength": 1
+            },
+            "checks": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "id": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "command": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "expected_exit": {
+                    "type": "integer"
+                  },
+                  "output_contains": {
+                    "type": "array",
+                    "items": {
+                      "type": "string"
+                    }
+                  }
+                },
+                "required": [
+                  "id",
+                  "command",
+                  "expected_exit",
+                  "output_contains"
+                ],
+                "additionalProperties": false
+              }
+            }
+          },
+          "required": [
+            "id",
+            "required_pairs",
+            "rubric",
+            "checks"
+          ],
+          "additionalProperties": false
+        },
+        {
+          "type": "null"
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "id",
+    "task_kind",
+    "context_file",
+    "targets",
+    "max_tokens",
+    "prompt",
+    "policy"
+  ],
+  "additionalProperties": false,
+  "$defs": {
+    "policy": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "required_pairs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "rubric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "checks": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "expected_exit": {
+                "type": "integer"
+              },
+              "output_contains": {
+                "type": "array",
+                "items": {
+                  "type": "string"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "command",
+              "expected_exit",
+              "output_contains"
+            ],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": [
+        "id",
+        "required_pairs",
+        "rubric",
+        "checks"
+      ],
+      "additionalProperties": false
+    },
+    "check": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "command": {
+          "type": "string",
+          "minLength": 1
+        },
+        "expected_exit": {
+          "type": "integer"
+        },
+        "output_contains": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "required": [
+        "id",
+        "command",
+        "expected_exit",
+        "output_contains"
+      ],
+      "additionalProperties": false
+    },
+    "settings": {
+      "type": "object",
+      "properties": {
+        "codex_binary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reasoning_effort": {
+          "type": "string",
+          "minLength": 1
+        },
+        "speed_tier": {
+          "enum": [
+            "standard",
+            "fast"
+          ]
+        }
+      },
+      "required": [
+        "codex_binary",
+        "model",
+        "reasoning_effort",
+        "speed_tier"
+      ],
+      "additionalProperties": false
+    },
+    "rates": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "as_of": {
+          "type": "string",
+          "format": "date"
+        },
+        "unit": {
+          "const": "credits_per_million_tokens"
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "speed_tier": {
+          "enum": [
+            "standard",
+            "fast"
+          ]
+        },
+        "input": {
+          "type": "number",
+          "minimum": 0
+        },
+        "cached_input": {
+          "type": "number",
+          "minimum": 0
+        },
+        "output": {
+          "type": "number",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "id",
+        "as_of",
+        "unit",
+        "model",
+        "speed_tier",
+        "input",
+        "cached_input",
+        "output"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

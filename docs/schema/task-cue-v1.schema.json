@@ -1,0 +1,251 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/task-cue-v1.schema.json",
+  "title": "RepoCue task-cue-v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "repocue/task-cue-1"
+    },
+    "kind": {
+      "const": "task"
+    },
+    "repository": {
+      "$ref": "cue-v1.schema.json#/properties/repository"
+    },
+    "epoch": {
+      "type": "string",
+      "minLength": 1
+    },
+    "snapshot": {
+      "type": "string",
+      "minLength": 1
+    },
+    "basis": {
+      "$ref": "cue-v1.schema.json#/properties/basis"
+    },
+    "freshness": {
+      "enum": [
+        "current",
+        "dirty-but-indexed"
+      ]
+    },
+    "budget": {
+      "$ref": "cue-v1.schema.json#/properties/budget"
+    },
+    "content": {
+      "type": "object",
+      "properties": {
+        "declaration": {
+          "type": "object",
+          "properties": {
+            "path": {
+              "type": "string",
+              "minLength": 1,
+              "pattern": "^[^\\\\:]+$"
+            },
+            "content_digest": {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            }
+          },
+          "required": [
+            "path",
+            "content_digest"
+          ],
+          "additionalProperties": false
+        },
+        "request": {
+          "type": "object",
+          "properties": {
+            "task_kind": {
+              "type": "string",
+              "minLength": 1
+            },
+            "targets": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[^\\\\:]+$"
+              },
+              "minItems": 1,
+              "uniqueItems": true
+            }
+          },
+          "required": [
+            "task_kind",
+            "targets"
+          ],
+          "additionalProperties": false
+        },
+        "required_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "items": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": [
+                  "instruction",
+                  "design",
+                  "verification"
+                ]
+              },
+              "required": {
+                "type": "boolean"
+              },
+              "source_id": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "check_source_ids": {
+                "type": "array",
+                "items": {
+                  "type": "string",
+                  "pattern": "^sha256:[0-9a-f]{64}$"
+                }
+              }
+            },
+            "required": [
+              "id",
+              "kind",
+              "required",
+              "source_id",
+              "check_source_ids"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "sources": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "path": {
+                "type": "string",
+                "minLength": 1,
+                "pattern": "^[^\\\\:]+$"
+              },
+              "content_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "lines": {
+                "anyOf": [
+                  {
+                    "type": "object",
+                    "properties": {
+                      "start": {
+                        "type": "integer",
+                        "minimum": 1
+                      },
+                      "end": {
+                        "type": "integer",
+                        "minimum": 1
+                      }
+                    },
+                    "required": [
+                      "start",
+                      "end"
+                    ],
+                    "additionalProperties": false
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "text": {
+                "type": "string"
+              },
+              "text_digest": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "id",
+              "path",
+              "content_digest",
+              "lines",
+              "text",
+              "text_digest"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "omitted": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "reason": {
+                "const": "budget"
+              }
+            },
+            "required": [
+              "id",
+              "reason"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "omitted_count": {
+          "type": "integer",
+          "minimum": 0
+        }
+      },
+      "required": [
+        "declaration",
+        "request",
+        "required_ids",
+        "items",
+        "sources",
+        "omitted",
+        "omitted_count"
+      ],
+      "additionalProperties": false
+    },
+    "warnings": {
+      "$ref": "cue-v1.schema.json#/properties/warnings"
+    },
+    "more": {
+      "type": "array",
+      "items": {},
+      "maxItems": 0
+    }
+  },
+  "required": [
+    "schema_version",
+    "kind",
+    "repository",
+    "epoch",
+    "snapshot",
+    "basis",
+    "freshness",
+    "budget",
+    "content",
+    "warnings",
+    "more"
+  ],
+  "additionalProperties": false
+}

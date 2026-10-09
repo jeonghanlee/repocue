@@ -2,8 +2,8 @@
 
 ## Scope
 
-This document is the canonical work register for the M3 quantitative savings
-report and its first repository calibration.
+This document is the canonical work register for quantitative reporting,
+repository calibration, and task-specific context delivery and measurement.
 
 **Out of scope:** Implementation or external agent execution before their
 separate authorization, and every feature listed in the M1 and M2 exclusions.
@@ -15,7 +15,7 @@ Canonical branch or ref: master
 Git upstream: origin/master
 Remote tracker: none
 
-Next session entry point: resolve G1 for the exact direct/basic calibration basis, conditions, evidence location, and first-pair cost checkpoint. M1 and M3 are Complete; M2 remains Blocked and no real-agent run is authorized.
+Next session entry point: review the accepted M4 implementation for separately authorized Git landing. P001-P007 and corrected T1-T8 are locally verified; both independent implementation lanes accept hand20261008_165535. M4 remains In progress until landing evidence is recorded. M5 needs M4 and separately accepted G3 provider/settings/rates/evidence/budget/pilot conditions before any real model run; the separate M2 / G1 calibration remains unchanged.
 
 ## Milestone
 
@@ -27,6 +27,11 @@ Next session entry point: resolve G1 for the exact direct/basic calibration basi
 | M3 | M2 | Initial repository calibration and report | Milestone | Blocked | No | M1, M3, G1 | At least three controlled direct/basic pairs produce a reproducible calibration and first report without modifying the evaluated repository; [detail](#m2---initial-repository-calibration-and-report) |
 | M3 | M3 | Token usage absence and report compatibility | Milestone | Complete | No | M1, D2, D14, D24 | Landed in 8d61f6e; missing counters remain unavailable; v4 execution and unchanged v3 reads pass M3 / T1-T4; [detail](#m3---token-usage-absence-and-report-compatibility) |
 | M3 | G1 | Calibration evidence authorization | External gate | Open | No | | The User authorizes either a verified retained report set or the cost and conditions of new Codex runs; [detail](#g1---calibration-evidence-authorization) |
+| Task context | M4 | Task-specific context delivery and local measurement readiness | Milestone | In progress | No | G2, G4, D25-D30 | Reviewed versioned contracts, shipped task cue, source delivery evidence, and local T1-T8 verification; [detail](#m4---task-specific-context-delivery-and-local-measurement-readiness) |
+| Task context | M5 | Task-context agent comparison | Milestone | Blocked | No | M4, G3, D25-D30 | Three controlled task comparisons retain cost, delivery, execution, and correctness evidence without unsupported savings claims; [detail](#m5---task-context-agent-comparison) |
+| Task context | G2 | Independent review session configuration | External gate | Complete | No | | User confirmed L size, Mode B, two independent Reviewers and root coordination/implementation; publication remains separately authorized; [detail](#g2---independent-review-session-configuration) |
+| Task context | G3 | Task-context experiment conditions and cost authorization | External gate | Open | No | | Authorize exact model, basis, run count, rate record, evidence location, and spending stop conditions; [detail](#g3---task-context-experiment-conditions-and-cost-authorization) |
+| Task context | G4 | Named task-context plan acceptance and implementation authorization | External gate | Complete | No | | User accepted plan20261008_052832 and authorized P001-P007 on 2026-10-08; [detail](#g4---named-task-context-plan-acceptance-and-implementation-authorization) |
 
 ### Decisions
 
@@ -56,6 +61,12 @@ Next session entry point: resolve G1 for the exact direct/basic calibration basi
 | D22 | Legacy zero values for scan duration and Git counts without evidence of measurement are `not_observed`, not observed zero. Preserve stored rows and suppress affected totals when coverage is incomplete. | 2026-09-07 |
 | D23 | Historical state selection uses recorded observation time, not SQLite publication time. Activity uses each metric row's recording time. Reports expose both boundaries and never claim to reconstruct when a snapshot became available. | 2026-09-07 |
 | D24 | New evaluation/runner version 4 distinguishes missing counters from zero and requires complete-turn coverage per aggregate. Legacy version-3 schemas, source bytes, and declared values remain unchanged; imports dispatch by matching declared versions. | 2026-09-08 |
+| D25 | Task context selects author-declared repository instructions, design references, and verification procedures by explicit task kind and target paths; it does not infer applicability or summarize meaning with an LLM. | 2026-10-07 |
+| D26 | New task-context and measurement contracts are versioned separately; frozen overview, M2 conditions, and direct/basic calibration compatibility remain unchanged. | 2026-10-07 |
+| D27 | Source delivery, command completion, result correctness, and semantic compliance are separate evidence classes. A declaration or command string alone proves none of the latter three. | 2026-10-07 |
+| D28 | Applicable required context cannot be silently dropped for budget fitting. Missing sources, stale digests, ambiguous source selection, or unresolved applicability prevent a complete task cue. RepoCue does not override execution-tool instruction priority or execute source-declared commands. | 2026-10-07 |
+| D29 | Agent comparisons retain all attempts, paired differences, cache observations, and missing measurements. Credit estimates use the applicable dated rate record and do not double-count cached input, reasoning output, or supplied cue tokens. | 2026-10-07 |
+| D30 | The local first slice retains Go, SQLite, deterministic extraction, CGo-free Linux and Windows builds, and real Git/SQLite/CLI verification. Real model execution and long-conversation claims need their own observed evidence and authorization. | 2026-10-07 |
 
 ### Milestone Details
 
@@ -1095,6 +1106,460 @@ cannot reconstruct these request-level charges.
 ##### Closure Evidence
 
 - none
+
+#### M4 - Task-Specific Context Delivery And Local Measurement Readiness
+
+Origin: 10a4f02 / M4
+Identity History: none
+GitHub Issue: none
+Status: In progress
+
+##### Summary
+
+Provide a small task-specific context cue for repository instructions, design
+decisions, and verification procedures. Explicit task and path matching selects
+author-declared source references. Deterministic extraction delivers the chosen
+original text with its source identity, current content digest, snapshot, and
+freshness. The source remains authoritative; a cue does not grant permission
+or establish that an agent understood or followed it.
+
+Local measurement readiness adds the evidence contract and real-path checks
+needed for M5. Existing command classification is insufficient to establish
+successful source delivery or verification execution because it does not
+retain command exit status or output in the runner observation.
+
+##### Scope
+
+- A versioned JSON declaration records item ID, kind, explicit task/path
+  applicability, required status, original-source reference, and completion
+  check reference. Sources belong to the evaluated Git repository.
+- A separately versioned task cue selects applicable items and provides
+  original-source text and provenance without automatic semantic summaries.
+- Define source selection, digest checking, stable output ordering, missing
+  inputs, conflict/ambiguity reporting, and required-versus-optional budgeting.
+- Add explicit CLI task and target-path inputs, schema validation, source
+  extraction, freshness checks, and measurements for the complete shipped cue
+  path. Keep existing overview/delta/provenance behavior and contracts.
+- Extend the external evaluation boundary to retain supported command
+  completion/output evidence; unsupported fields remain `not_observed`.
+- Define a separate task benchmark and answer/result contracts. Do not feed
+  task/basic evidence into the existing direct/basic calibration importer.
+- Add local real Git/SQLite/CLI fixtures, contract checks, distribution checks,
+  and functional documentation of data flow and evidence limitations.
+
+Out of scope: global skill rewriting, relaxing required skill reads, external
+home-directory indexing, executing declaration-supplied commands, runtime
+permission enforcement, real model execution, MCP, embeddings, source parsers,
+LLM summarization, SQLite source-text storage, history pruning, and automatic
+deployment or Git publication.
+
+##### Completion Criteria
+
+- An explicit task and target path produce only applicable context, including
+  all applicable required items and their source identities.
+- Selected source text matches the real file bytes/range and digest used to
+  build the cue. Missing, changed, or ambiguous sources cannot produce a
+  complete successful result.
+- Required-item budget overflow fails explicitly. Optional omissions are
+  counted and reported. Unknown matching inputs never silently exclude a
+  potentially required item.
+- Source references cannot escape the repository through absolute paths,
+  traversal, or symlink targets.
+- Delivery evidence, command success, correctness, and compliance have
+  distinct fields and explicit availability. The implementation never equates
+  a command name or final-response declaration with successful verification.
+- Existing output/schema and real-path regressions pass without altering
+  frozen calibration semantics or introducing a parser runtime dependency.
+- T1-T8 and independent plan/implementation acceptance are recorded; Git
+  landing evidence is required before marking the milestone Complete.
+
+##### Dependencies And Decisions
+
+D25-D30 define the accepted owner direction from the implementation and
+measurement plan. G2 is Complete after the User confirmed L size / Mode B
+on 2026-10-07. G4 owns acceptance and implementation authorization for the
+reviewed named M4 plan and is Complete on 2026-10-08. M2 / G1 is a different
+experiment and is not a behavioral dependency. M5 consumes the reviewed measurement
+contracts. The User requested registration and trying the preceding plan on
+2026-10-07; no real-model or Git-publication conditions were selected.
+
+##### Implementation Plan
+
+Plan Status: accepted
+Plan Acceptance: 2026-10-08; User accepted plan20261008_052832, P001-P007, after both correction reviews.
+Implementation Authorization: 2026-10-08; User authorized plan20261008_052832, P001-P007; auth20261008_072718 records the exact scope and exclusions.
+Superseded Plan Artifacts: none
+
+Named plan: plan20261008_052832, local review artifact
+`work/review_sessions/20261008_050539_task-context/plan/plan20261008_052832_codex_gpt6_root.md`.
+Review basis: HEAD `34d6d902365fb9ff4292996cafe0c18fd50c7d71` plus this
+session's uncommitted milestone registration. Two initial independent reports
+were read; convergence conv20261008_052115 includes all four measurement-plan
+readiness findings. Both independent correction reviews accepted plan readiness;
+owner acceptance and implementation authority are recorded under G4.
+
+Accepted contract choices: OR within explicit task/path lists,
+AND between dimensions, global dimensions and union across targets; canonical
+component-aware relative paths; whole files or inclusive 1-based line ranges;
+expected and snapshot full-file digests plus extracted-text digests; original
+UTF-8/line endings retained; declaration/source symlinks, linked intermediate
+components, gitlinks and untracked sources rejected. Every selected source/check
+failure is an error. Required sources/checks/provenance remain whole under the
+budget; whole optional units may be omitted with explicit IDs/count/reason.
+These policies describe declared coverage, not all runtime instructions.
+
+1. **P001 - Contracts and ADR.** Add six new schemas under `docs/schema/`:
+   `task-context-v1.schema.json`, `task-cue-v1.schema.json`,
+   `task-benchmark-v1.schema.json`, `task-answer-v1.schema.json`,
+   `task-runner-v1.schema.json`, `task-evaluation-v1.schema.json`.
+   Add `docs/TASK_CONTEXT.md`, `docs/task-context.example.json` and
+   `docs/adr/0003-task-context-delivery-and-evidence.md`; extend schema tests.
+   Keep existing versions unchanged. Verify T1 and T8.
+2. **P002 - Selection and source.** Add
+   `internal/taskcontext/{declaration,selection,source}.go` and tests.
+   Bind tracked declaration/source/check bytes to expected and snapshot digests;
+   use contained regular-file access and deterministic range selection.
+   Source text stays transient; SQLite remains content-free. Verify T1-T3.
+3. **P003 - Task cue and shipped CLI.** Add `internal/cue/task.go`,
+   `internal/app/task_context.go`, tests and shipped fixtures under
+   `internal/app/testdata/task-context/`; update app flags/help/dispatch.
+   `cue --view task` requires `--context-file`, `--task-kind` and repeatable
+   `--target`; legacy views reject task-only flags. Task mode rejects
+   `--since`, `--path` and refresh-needed state. Build the complete mandatory
+   envelope before optional budgeting. Test the actual executable over
+   real Git/SQLite. Verify T2-T4 and T6.
+4. **P004 - Benchmark and scorer.** Add `internal/taskbenchmark/`,
+   `docs/benchmarks/task-context-v1.md` and three original task specifications.
+   Bind prompt/tool/source/answer/assessment identity and required-check coverage.
+   Explanation needs a source-backed rubric/assessment; instruction ID
+   correctness and command success remain distinct. Missing policy or semantic
+   evidence cannot award success or improvement. Verify T5.
+5. **P005 - Task transport.** Add `internal/codexadapter/task.go` and tests;
+   `cmd/repocue-codex-runner/main.go` dispatches only the exact task-runner
+   contract to the new configuration. Legacy version/validators remain intact.
+   Capture actual stdin, raw events/stdout/stderr and available completion/
+   exit/output evidence on failure; decode JSON source text before comparing
+   original bytes. Verify T5-T6.
+6. **P006 - Attempts, costs and summaries.** Add
+   `internal/evaluation/{task,task_attempt,task_cost}.go`, tests,
+   `internal/app/task_evaluation.go` and executable pipeline tests.
+   `evaluate-task` prepares without an agent by default; explicit runner mode
+   performs one ordered pair, with no retry or continuation. Measure both
+   actual cue CLI paths. Create external attempts before launch and preserve
+   first/second-arm failure, malformed output, cancellation and post-failure
+   basis errors. Retain wrong answers and unavailable data. Credit requires
+   complete usage and compatible dated rates; a verdict also requires the
+   frozen task-success/coverage policy and its evidence. Task reports cannot
+   enter the old calibration importer. Verify T5-T6.
+7. **P007 - Docs, checks and handoff.** Update `docs/CLI.md`,
+   `DATA_MODEL.md`, `ARCHITECTURE.md`, `EVALUATION.md`,
+   `CURRENT_STATUS.md`, `SUMMARY.md` and this detail. Run T1-T8 through
+   actual packages/fixtures/binaries, obtain independent implementation
+   acceptance, and prepare the G3 settings/evidence/policy checklist.
+   No model execution or Git publication belongs to M4.
+
+##### Test Plan
+
+| Label | Layer | Method | Environment | Expected Result |
+| --- | --- | --- | --- | --- |
+| T1 | Contract | Real declaration/parser and JSON Schema checks for valid, invalid, duplicate, and unknown fields | Go | Versioned contracts agree with runtime validation |
+| T2 | Selection | Shipped task cue CLI over temporary tracked Git repositories and real SQLite | Linux; Go | Global and task/path matches retain all required items; missing task inputs fail |
+| T3 | Source integrity | Actual source files, selected ranges, source changes/deletions, symlinks, and refresh transitions through CLI | Real Git/SQLite/filesystem | Text and digest correspond; escaping, ambiguous, or stale sources fail |
+| T4 | Budget | Shipped CLI with required overflow and optional omission fixtures | Real Git/SQLite | Required items never disappear into a successful cue; optional omission is explicit |
+| T5 | Evidence | Built CLI and runner through actual task adapter/evaluator/scorer; outer executable captures stdin and actual-command outcomes plus failed/partial/missing event cases | Real Git/SQLite/subprocesses; only external Codex substituted | Source/check/prompt identity binds; failures survive; final-only/wrong-command/missing-policy/cheaper-wrong results cannot claim improvement |
+| T6 | Regression | `make check` and `make test.race` | Linux; actual Go packages and fixtures | Existing and new behavior passes without internal-path substitutes |
+| T7 | Distribution | `make build.linux-amd64` and `make build.windows-amd64`; inspect actual binaries | Linux amd64; CGo disabled | Static Linux distribution and Windows cross-build remain available |
+| T8 | Presentation and acceptance | `make docs.build`, `git diff --check`, canonical row/detail/T-label checks, independent second/third-person verification | Source and generated book | Functional docs and plans match observed behavior and no unsupported savings claim appears |
+
+##### Verification Results
+
+| Label | Observed At | Environment | Result | Evidence |
+| --- | --- | --- | --- | --- |
+| T1 | 2026-10-08 16:48:31 UTC | Linux; Go 1.27.1 | Passed | `make check` and `make test.race`: real embedded schema/parser fixtures, duplicate/unknown fields, independent task namespaces and unchanged legacy versions. |
+| T2 | 2026-10-08 16:48:31 UTC | Linux; built CLI; real tracked Git/SQLite | Passed | Same full checks execute task/path/global/component/directory/new-file selection, union, unknown-input rejection and deterministic ordering through the shipped CLI. |
+| T3 | 2026-10-08 16:48:31 UTC | Linux; real Git/SQLite/filesystem | Passed | Same full checks execute actual pins/ranges, CRLF/final newline/streaming UTF-8 boundaries, stale/deleted sources, refresh transitions, symlinks, gitlinks and invalid paths. |
+| T4 | 2026-10-08 16:48:31 UTC | Linux; built CLI; real Git/SQLite | Passed | Same full checks execute exact fit, mandatory overflow with no successful stdout, whole optional omission, shared-source identity and complete provenance budgeting. |
+| T5 | 2026-10-08 16:48:31 UTC | Linux; built CLI/runner/evaluator; external Codex fixture | Passed | Full checks execute actual delivery/checks and retained failures, cancellation, malformed/missing data, changed/unavailable basis, wrong answers, matched summaries and legacy rejection. Correction regressions bind actual provider schema bytes and reject changed or missing frozen pair schema, changed captured schema and changed request identity; before-second-arm mutation preserves the first arm and blocks the second provider. Absolute/relative/symlink summaries compare byte-identical. Only external Codex is substituted; synthetic counters/assessments establish handling, not capability or savings. |
+| T6 | 2026-10-08 16:48:31 UTC | Linux; Go 1.27.1 | Passed | Correction `make check` and `make test.race` exit zero; formatting, package tests and vet pass. App executes 63.720s / 128.549s; evaluation 10.016s / 11.500s. Some unchanged packages use Go's cache; no claim of fresh execution of every package. |
+| T7 | 2026-10-08 16:48:31 UTC | Linux amd64; CGo disabled; Windows amd64 cross-build | Passed | Correction `make build.repocue build.linux-amd64 build.windows-amd64` exits zero; actual `file`/`readelf` observes static Linux ELF with no INTERP and Windows PE32+. Windows execution is unverified. |
+| T8 | 2026-10-08 17:10:29 UTC | Source and generated mdBook; independent Mode B lanes | Passed | Correction `make docs.build` and `git diff --check` exit zero; all nine M/G rows have exactly one detail, both M4 T-label sets are T1-T8, and all 15 local SUMMARY and 37 changed-document links resolve. Both second/third-person follow-ups accept hand20261008_165535: I1 fup20261008_170345 and I2 fup20261008_170912. Root reads both reports and rechecks all 52 target hashes at the recorded observation. Each lane executes current shipped fixtures and docs independently; no provider capability, billing or savings is inferred. |
+
+##### Closure Evidence
+
+- Local implementation, corrected T1-T8 verification and both independent
+  implementation acceptances are observed above. Git landing remains pending. No paid model run,
+  actual provider-capability verification, billing measurement, commit or push
+  occurred. M4 remains In progress; M5 remains Blocked.
+
+##### Plan Review Evidence
+
+- Initial C1-C3 report rev20261008_051728: no confirmed current defect; contract
+  choices separated from conditional implementation hazards.
+- Initial C4-C6 report rev20261008_051835: four readiness gaps addressed by
+  explicit dispatch, retained attempts, evidence/scoring and success/coverage
+  prerequisites. Its actual legacy usage-presence pipeline and failure-
+  publication checks passed; these do not establish M4 behavior.
+- Named correction plan20261008_052832 has P001-P007 and exact V001-V010 commands mapped
+  to T1-T8. Both independent correction checks and G4 are complete.
+- C1-C3 correction report fup20261008_054213, finalized
+  2026-10-08 05:42:13 UTC: no remaining confirmed plan defect; matching,
+  source/range/digest/link/budget choices and preservation checks are reviewable.
+- C4-C6 correction report fup20261008_054053, finalized
+  2026-10-08 05:40:53 UTC: all four original readiness findings are accepted
+  and reflected in the plan. No remaining verified plan blocker. Both reports
+  were read by the coordinator; neither establishes product behavior or grants
+  owner acceptance/implementation authority. Files remain local under
+  `work/review_sessions/20261008_050539_task-context/reviews/`.
+- Documentation preflight on 2026-10-08 05:34:26 UTC: `make docs.build` and
+  `git diff --check` exited zero; the non-ASCII scan of this document, the named
+  plan and convergence report found no matches. The generated book contains
+  the M4 plan and G4 detail. These are plan/document observations, not completed
+  M4 implementation checks; T1-T8 were Pending at that observation.
+
+##### Implementation Review Evidence
+
+- Initial I1 rev20261008_155804 accepts its source/selection/budget/preservation
+  lane after independent second/third-person execution.
+- Initial I2 rev20261008_155016 confirms F-codex_gpt6_r4-001: changing the
+  archived answer schema leaves the original summary unchanged. Root executes
+  the same retained real fixture and confirms the defect, plus relative-directory
+  manifest rejection. Existing P001/P005/P006/P007 authority covers both
+  implementation corrections; cmt20261008_160553 records the boundary.
+- Correction regressions execute the shipped CLI/runner/outer-fixture/summary
+  path. Actual frozen and provider-supplied schema bytes agree; missing/changed
+  schema and changed request identity retain both attempts and suppress complete
+  comparisons. A changed schema between arms preserves the completed first arm
+  and prevents the second provider launch. Absolute, relative and symlink paths
+  produce byte-identical summaries without launching providers.
+- I1 follow-up fup20261008_170345, finalized 2026-10-08 17:03:45 UTC,
+  accepts hand20261008_165535 with no remaining confirmed I1 defect. Fresh
+  source/cue/public-example/frozen-schema tests, a separate real Git/SQLite
+  source fixture, legacy contracts and actual static/cross-build inspections pass.
+- I2 follow-up fup20261008_170912, finalized 2026-10-08 17:09:12 UTC,
+  accepts the same target with no remaining confirmed I2 defect.
+  F-codex_gpt6_r4-001 is verified implemented. The current Task suite and an
+  independently compiled CLI/runner/shipped outer fixture execute five schema
+  corruptions and physical-directory aliases. Raw argv/transport and artifact
+  hash rebinding cannot override the frozen schema contract; two attempts stay
+  visible and incomplete comparisons have no verdict.
+- Root reads both actual reports and verifies all 52 hashes at
+  2026-10-08 17:10:29 UTC. Reports remain local under
+  `work/review_sessions/20261008_050539_task-context/reviews/`. Each report
+  distinguishes fresh lane checks from earlier full/race checks, synthetic
+  accounting and unobserved real-model/billing outcomes.
+- The approved plan and authorization are unchanged. This completes the second
+  implementation acceptance review and the sole correction-and-rereview cycle.
+  Only canonical observations/acceptance/next-entry-point and the session index
+  advance after acceptance; product code, schemas and functional docs stay fixed.
+
+#### M5 - Task-Context Agent Comparison
+
+Origin: 10a4f02 / M5
+Identity History: none
+GitHub Issue: none
+Status: Blocked
+
+##### Summary
+
+Compare the frozen existing overview against the new task-specific cue on the
+same repository state, model, tools, task, and execution settings. Measure
+total credit estimate, tokens, full cue and agent duration, additional
+discovery commands, required-context delivery, observable execution, and task
+correctness. Evaluate quality independently of efficiency.
+
+##### Scope
+
+- Three task types: code explanation with original-source evidence,
+  applicable instruction/reference identification, and actual execution and
+  reporting of a specified verification command.
+- One initial two-execution pair validates collection and cost accounting.
+  Subject to its explicit continuation checkpoint, three repeats per task
+  and two conditions total 18 executions including that first pair.
+- Freeze alternating order before the pilot (2:1 within each task, 5:4 overall
+  across nine pairs) and retain model/CLI versions, reasoning, speed
+  tier, tool configuration, prompts, source digests, budgets, cache counters,
+  repository fingerprints, attempt IDs, outputs, and scoring evidence.
+- Separate source delivery, successful command execution, result
+  correctness, and semantic compliance. Raw evidence remains external.
+
+Out of scope: changing legacy M2 / G1, calibrating task results as direct/basic,
+claiming long-conversation savings from fresh sessions, inferring cache misses,
+model substitutions, automatic retries, and real agent source modifications.
+
+##### Completion Criteria
+
+- Every attempted run and failed/incomplete pair remains visible; no favorable
+  or correct-only sample selection is permitted.
+- Per-task paired cost differences, medians, ranges, correctness, missing
+  measurements, and order/cache observations are reported separately.
+- Freeze a digest-bound task-success and required pair/evidence coverage policy
+  before the first model run. A verdict requires successful required task
+  outcomes, no missing required context or coverage, preserved paired
+  correctness and a lower paired-median credit estimate. Equal incorrect
+  answers do not satisfy success. Missing semantic assessment stays unavailable;
+  partial comparisons cannot award the complete planned improvement verdict.
+  Three repeats support descriptive findings, not significance.
+- Tokens include supplied context once. Cached tokens are an input subset;
+  reasoning tokens are an output subset. Credit calculation uses uncached
+  input, cached input, output, and the dated applicable credit rate/speed
+  tier. Missing cost inputs suppress the cost estimate.
+- Local CPU, memory, filesystem I/O, task-ready latency, and account billing
+  remain unavailable unless their actual measurement path is added and run.
+- Required evidence, first-pair continuation decision, and final acceptance
+  are recorded before closure; no long-conversation claim is made.
+
+##### Dependencies And Decisions
+
+M4 supplies the reviewed implementation and measurement contracts. G3 owns
+the exact real-model execution conditions and spending authorization; resume
+as Not started. D25-D30 apply. The existing M2 / G1 experiment remains a
+separate work identity with its original conditions and authorization.
+
+##### Implementation Plan
+
+Plan Status: draft
+Plan Acceptance: none
+Implementation Authorization: none
+Superseded Plan Artifacts: none
+
+1. Freeze the reviewed M4 artifact basis, task files, result schemas, applicable
+   instructions, model/settings, output directory, and credit rate record.
+2. Preflight both real cue paths and evidence capture without a model. Record
+   full CLI output and timings, digests, source availability, and correctness
+   checks; freeze the common cue budget before model results exist.
+3. Execute only the first authorized A/B pair. Report usage, cost estimate,
+   correctness, completeness, duration, and limitations. Wait for the explicit
+   continuation decision before the remaining executions.
+4. Run authorized remaining pairs with balanced order, original-source
+   scoring, repository-state checks, and attempt/error retention.
+5. Publish a separate versioned JSON result and human-readable comparison.
+   Record observations and acceptance here. Do not import these conditions
+   into the existing production direct/basic calibration.
+6. After first-stage evidence, prepare a separately authorized continued-
+   conversation experiment if required. A multi-turn runner and fixed turn
+   sequence need their own plan; fresh-session results cannot substitute.
+
+##### Test Plan
+
+| Label | Layer | Method | Environment | Expected Result |
+| --- | --- | --- | --- | --- |
+| T1 | Preflight | Actual existing and task cue CLI with frozen task/source/result contracts | Reviewed M4 basis; no model | Comparable inputs, complete required context, and reproducible digests |
+| T2 | Pilot | First authorized pair through actual Codex and task evaluator | Pinned model/settings; external evidence directory | Usage, delivery, execution, and quality observations available or explicitly unavailable |
+| T3 | Comparison | Authorized three tasks x three repeats x two conditions, including pilot | Identical paired repository state and balanced condition order | All attempts retained; paired cost and correctness findings re-derivable |
+| T4 | Acceptance | Independently recompute results from actual logs and dated rates | Retained raw evidence | Missing data and subset accounting respected; no long-conversation or significance claim |
+
+##### Verification Results
+
+| Label | Observed At | Environment | Result | Evidence |
+| --- | --- | --- | --- | --- |
+| T1 | Not run | Reviewed M4 basis | Pending | none |
+| T2 | Not run | Actual Codex | Pending | G3 remains Open |
+| T3 | Not run | Actual Codex | Pending | G3 and pilot continuation remain unresolved |
+| T4 | Not run | Retained evidence | Pending | none |
+
+##### Closure Evidence
+
+- none; no real model execution or savings measurement has occurred.
+
+#### G2 - Independent Review Session Configuration
+
+Origin: 10a4f02 / G2
+GitHub Issue: none
+Status: Complete
+
+##### Summary
+
+Confirm the review-session size, execution topology, roles, and commit cadence
+required before M4 changes durable schema and evidence contracts. The User
+confirmed L size, Mode B, two independent-context Reviewers and the current
+agent coordinating and implementing on 2026-10-07. The initial M-size/Mode-A
+proposal was corrected before session creation. Publication is deferred to a
+separately authorized single closure; no commit or push is delegated.
+
+##### Completion Criteria
+
+- User confirmation and required role/session entry are recorded.
+
+##### Verification Results
+
+| Observed At | Result | Evidence |
+| --- | --- | --- |
+| 2026-10-08 05:06:56 UTC | Confirmed | User selected L size / Mode B; session rs20261008_050539 records root Facilitator/Implementer and two independent Reviewer lanes |
+
+##### Closure Evidence
+
+- User configuration confirmation and role recording in local session `work/review_sessions/20261008_050539_task-context/README.md`; product plan acceptance and implementation authorization remain separate.
+
+#### G3 - Task-Context Experiment Conditions And Cost Authorization
+
+Origin: 10a4f02 / G3
+GitHub Issue: none
+Status: Open
+
+##### Summary
+
+Authorize the exact M5 experiment basis, model and reasoning/speed settings,
+dated credit rates, evidence directory, first-pair execution count, spending
+stop conditions, and continuation checkpoint. Authorization to develop or run
+local tests is not authority for real paid model executions.
+
+##### Completion Criteria
+
+- Reviewed M4 evidence and exact M5 conditions are available.
+- Freeze task/answer/check identities, source-backed explanation rubric and
+  assessor provenance, success thresholds and required pair/evidence coverage
+  before outcomes. Missing policy or semantic evidence cannot award a verdict.
+- The maximum planned credit budget and enforceable stop controls are
+  distinguished from estimates. If the adapter cannot enforce a hard billing
+  ceiling, state that limitation instead of presenting a two-run checkpoint
+  as a spending cap.
+- User authorizes the first pair under these conditions. Further executions
+  need the pilot continuation decision; failure does not authorize retries.
+
+##### Verification Results
+
+| Observed At | Result | Evidence |
+| --- | --- | --- |
+| Not run | Pending | No model, rate record, exact basis, or spending authority selected |
+
+##### Closure Evidence
+
+- none
+
+#### G4 - Named Task-Context Plan Acceptance And Implementation Authorization
+
+Origin: 10a4f02 / G4
+GitHub Issue: none
+Status: Complete
+
+##### Summary
+
+The User accepted and authorized reviewed M4 plan plan20261008_052832,
+P001-P007, on 2026-10-08.
+Responsible party: User. Affected work: M4. The prior request authorizes
+registration and preparation; final schema/measurement choices remain explicit.
+Both independent correction checks are complete. Owner acceptance and
+implementation authorization are recorded separately in M4.
+
+##### Completion Criteria
+
+- The User accepts the current named plan, including its matching, source/
+  range/digest/link policies and guarded evidence/comparison boundary.
+- The User authorizes implementation of this exact P001-P007 plan; record
+  acceptance and implementation authority separately in M4.
+- Material changes require a superseding plan and new acceptance/authority.
+  Paid M5/G3 and Git publication remain separate.
+
+##### Verification Results
+
+| Observed At | Result | Evidence |
+| --- | --- | --- |
+| 2026-10-08 07:27:18 UTC | Confirmed | User approved the named-plan question; auth20261008_072718 records P001-P007 and separate paid/Git exclusions |
+
+##### Closure Evidence
+
+- User acceptance and implementation authorization on 2026-10-08, recorded in
+  `work/review_sessions/20261008_050539_task-context/plan/auth20261008_072718_codex_gpt6_root.md`; both independent correction reports were read before authorization.
 
 ## Backlog
 

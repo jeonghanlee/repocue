@@ -1,0 +1,965 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/task-evaluation-v1.schema.json",
+  "title": "RepoCue task evaluation, retained attempts and bound assessments",
+  "oneOf": [
+    {
+      "$ref": "#/$defs/report"
+    },
+    {
+      "$ref": "#/$defs/attempt"
+    },
+    {
+      "$ref": "#/$defs/summary"
+    },
+    {
+      "$ref": "#/$defs/assessments"
+    }
+  ],
+  "$defs": {
+    "metric": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "value",
+        "unit",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "observed",
+            "derived",
+            "estimated",
+            "not_observed"
+          ]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "unit": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "not_observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "number"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "outcome": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "value",
+        "reason"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "derived",
+            "not_observed"
+          ]
+        },
+        "value": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "reason": {
+          "type": "string"
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "status": {
+                "const": "not_observed"
+              }
+            }
+          },
+          "then": {
+            "properties": {
+              "value": {
+                "type": "null"
+              }
+            }
+          },
+          "else": {
+            "properties": {
+              "value": {
+                "type": "boolean"
+              }
+            }
+          }
+        }
+      ]
+    },
+    "delivery": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "status",
+        "complete",
+        "required_sources",
+        "provided"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "observed",
+            "not_observed"
+          ]
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "required_sources": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "provided": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "additionalProperties": false,
+            "required": [
+              "source_id",
+              "channel",
+              "tool_id"
+            ],
+            "properties": {
+              "source_id": {
+                "type": "string",
+                "pattern": "^sha256:[0-9a-f]{64}$"
+              },
+              "channel": {
+                "enum": [
+                  "prompt",
+                  "tool"
+                ]
+              },
+              "tool_id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            }
+          }
+        }
+      }
+    },
+    "evidence": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "algorithm",
+        "fingerprint",
+        "repository_id",
+        "status_digest",
+        "tracked_digest",
+        "untracked_digest",
+        "complete",
+        "observed_at",
+        "duration_ms",
+        "files_read",
+        "bytes_read",
+        "git_commands"
+      ],
+      "properties": {
+        "algorithm": {
+          "const": "repocue/content-evidence-1"
+        },
+        "fingerprint": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "repository_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "tracked_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "untracked_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "complete": {
+          "type": "boolean"
+        },
+        "observed_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "files_read": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "bytes_read": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "git_commands": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    },
+    "process": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "operation",
+        "duration_ms",
+        "output_bytes",
+        "estimated_tokens",
+        "output_digest",
+        "exit_code",
+        "error"
+      ],
+      "properties": {
+        "operation": {
+          "enum": [
+            "refresh",
+            "overview",
+            "task"
+          ]
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "output_bytes": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "estimated_tokens": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "output_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "const": ""
+            }
+          ]
+        },
+        "exit_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "attempt": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "id",
+        "arm",
+        "status",
+        "started_at",
+        "finished_at",
+        "exit_code",
+        "before",
+        "after",
+        "basis_error",
+        "transport",
+        "artifacts",
+        "delivery",
+        "correctness",
+        "compliance",
+        "metrics",
+        "eligible",
+        "error"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "repocue/task-evaluation-1"
+        },
+        "kind": {
+          "const": "attempt"
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arm": {
+          "enum": [
+            "overview",
+            "task"
+          ]
+        },
+        "status": {
+          "enum": [
+            "started",
+            "completed",
+            "failed",
+            "invalid",
+            "cancelled"
+          ]
+        },
+        "started_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "finished_at": {
+          "anyOf": [
+            {
+              "type": "string",
+              "format": "date-time"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "exit_code": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "before": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/evidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "after": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/evidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "basis_error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "transport": {
+          "anyOf": [
+            {
+              "$ref": "task-runner-v1.schema.json#/$defs/observation"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          }
+        },
+        "delivery": {
+          "$ref": "#/$defs/delivery"
+        },
+        "correctness": {
+          "$ref": "#/$defs/outcome"
+        },
+        "compliance": {
+          "$ref": "#/$defs/outcome"
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/metric"
+          }
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "report": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "id",
+        "directory",
+        "created_at",
+        "status",
+        "task",
+        "task_digest",
+        "policy_digest",
+        "output_schema_digest",
+        "rates",
+        "rate_digest",
+        "settings",
+        "basis",
+        "expected",
+        "order",
+        "maintenance",
+        "baseline",
+        "cue_costs",
+        "attempts",
+        "error"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "repocue/task-evaluation-1"
+        },
+        "kind": {
+          "enum": [
+            "preparation",
+            "pair"
+          ]
+        },
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "created_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "status": {
+          "enum": [
+            "preparing",
+            "prepared",
+            "running",
+            "completed",
+            "failed"
+          ]
+        },
+        "task": {
+          "$ref": "task-benchmark-v1.schema.json"
+        },
+        "task_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "output_schema_digest": {
+          "anyOf": [
+            { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+            { "type": "null" }
+          ]
+        },
+        "policy_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "const": ""
+            }
+          ]
+        },
+        "rates": {
+          "anyOf": [
+            {
+              "$ref": "task-benchmark-v1.schema.json#/$defs/rates"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "rate_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "const": ""
+            }
+          ]
+        },
+        "settings": {
+          "anyOf": [
+            {
+              "$ref": "task-benchmark-v1.schema.json#/$defs/settings"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "basis": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/evidence"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "expected": {
+          "anyOf": [
+            {
+              "$ref": "task-cue-v1.schema.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "order": {
+          "type": "array",
+          "minItems": 2,
+          "maxItems": 2,
+          "uniqueItems": true,
+          "items": {
+            "enum": [
+              "overview",
+              "task"
+            ]
+          }
+        },
+        "maintenance": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/process"
+          }
+        },
+        "baseline": {
+          "$ref": "#/$defs/metric"
+        },
+        "cue_costs": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/process"
+          }
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/attempt"
+          }
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "coverage": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "known_pairs",
+        "unknown_pairs",
+        "median_difference",
+        "min_difference",
+        "max_difference"
+      ],
+      "properties": {
+        "known_pairs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "unknown_pairs": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "median_difference": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "min_difference": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "max_difference": {
+          "anyOf": [
+            {
+              "type": "number"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "inventory": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "pair_id",
+        "attempt_id",
+        "arm",
+        "status",
+        "eligible",
+        "delivery",
+        "correctness",
+        "compliance",
+        "metrics",
+        "error"
+      ],
+      "properties": {
+        "pair_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "arm": {
+          "enum": [
+            "overview",
+            "task",
+            "unknown"
+          ]
+        },
+        "status": {
+          "enum": [
+            "started",
+            "completed",
+            "failed",
+            "invalid",
+            "cancelled"
+          ]
+        },
+        "eligible": {
+          "type": "boolean"
+        },
+        "delivery": {
+          "$ref": "#/$defs/delivery"
+        },
+        "correctness": {
+          "$ref": "#/$defs/outcome"
+        },
+        "compliance": {
+          "$ref": "#/$defs/outcome"
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/metric"
+          }
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "group": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "task_digest",
+        "policy_digest",
+        "basis_fingerprint",
+        "pair_count",
+        "overview_first",
+        "task_first",
+        "metrics",
+        "verdict"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "policy_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "const": ""
+            }
+          ]
+        },
+        "basis_fingerprint": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "pair_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "overview_first": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "task_first": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "metrics": {
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/$defs/coverage"
+          }
+        },
+        "verdict": {
+          "$ref": "#/$defs/outcome"
+        }
+      }
+    },
+    "summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "attempts",
+        "groups",
+        "errors"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "repocue/task-evaluation-1"
+        },
+        "kind": {
+          "const": "summary"
+        },
+        "attempts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/inventory"
+          }
+        },
+        "groups": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/group"
+          }
+        },
+        "errors": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "assessment": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "task_id",
+        "policy_digest",
+        "attempt_id",
+        "answer_digest",
+        "basis_fingerprint",
+        "assessor",
+        "rubric",
+        "source_refs",
+        "correct",
+        "compliant"
+      ],
+      "properties": {
+        "task_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "policy_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "answer_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "basis_fingerprint": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "assessor": {
+          "type": "string",
+          "minLength": 1
+        },
+        "rubric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "$ref": "task-context-v1.schema.json#/$defs/reference"
+          }
+        },
+        "correct": {
+          "type": "boolean"
+        },
+        "compliant": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "assessments": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "schema_version",
+        "kind",
+        "assessments"
+      ],
+      "properties": {
+        "schema_version": {
+          "const": "repocue/task-evaluation-1"
+        },
+        "kind": {
+          "const": "assessments"
+        },
+        "assessments": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/assessment"
+          }
+        }
+      }
+    }
+  }
+}

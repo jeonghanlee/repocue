@@ -1,0 +1,83 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/task-answer-v1.schema.json",
+  "title": "RepoCue task-answer-v1",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": "repocue/task-answer-1"
+    },
+    "task_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "task_kind": {
+      "enum": [
+        "explanation",
+        "discovery",
+        "verification"
+      ]
+    },
+    "required_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "source_refs": {
+      "type": "array",
+      "items": {
+        "$ref": "task-context-v1.schema.json#/$defs/reference"
+      }
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "text": {
+            "type": "string",
+            "minLength": 1
+          },
+          "source_refs": {
+            "type": "array",
+            "items": {
+              "$ref": "task-context-v1.schema.json#/$defs/reference"
+            }
+          }
+        },
+        "required": [
+          "text",
+          "source_refs"
+        ],
+        "additionalProperties": false
+      }
+    },
+    "checks": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
+    "uncertainties": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    }
+  },
+  "required": [
+    "schema_version",
+    "task_id",
+    "task_kind",
+    "required_ids",
+    "source_refs",
+    "claims",
+    "checks",
+    "uncertainties"
+  ],
+  "additionalProperties": false
+}

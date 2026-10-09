@@ -1,0 +1,17 @@
+{
+  "schema_version": "repocue/task-benchmark-1",
+  "id": "repocue-context-discovery",
+  "task_kind": "discovery",
+  "context_file": "docs/task-context.example.json",
+  "targets": [
+    "internal/cue"
+  ],
+  "max_tokens": 5000,
+  "prompt": "Identify every applicable required context item and its exact primary/check source references for this target.",
+  "policy": {
+    "id": "example-discovery-policy",
+    "required_pairs": 3,
+    "rubric": "Required IDs and pinned primary/check source sets exactly match the actual declaration selector.",
+    "checks": []
+  }
+}

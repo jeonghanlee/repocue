@@ -1,0 +1,23 @@
+{
+  "schema_version": "repocue/task-context-1",
+  "task_kinds": [
+    "explanation",
+    "discovery",
+    "verification"
+  ],
+  "items": [
+    {
+      "id": "repository-context",
+      "kind": "instruction",
+      "required": true,
+      "task_kinds": null,
+      "path_prefixes": null,
+      "source": {
+        "path": "README.md",
+        "content_digest": "sha256:7ffa93ebe3f4cd35a600443026f79f8476b18e885bcb48bf5635e41faa15669e",
+        "lines": null
+      },
+      "checks": []
+    }
+  ]
+}

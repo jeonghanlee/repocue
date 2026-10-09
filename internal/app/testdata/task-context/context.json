@@ -1,0 +1,67 @@
+{
+  "schema_version": "repocue/task-context-1",
+  "task_kinds": [
+    "explanation",
+    "discovery",
+    "verification"
+  ],
+  "items": [
+    {
+      "id": "global-rule",
+      "kind": "instruction",
+      "required": true,
+      "task_kinds": null,
+      "path_prefixes": null,
+      "source": {
+        "path": "docs/rules.md",
+        "content_digest": "SOURCE_DIGEST",
+        "lines": {
+          "start": 2,
+          "end": 3
+        }
+      },
+      "checks": []
+    },
+    {
+      "id": "scoped-check",
+      "kind": "verification",
+      "required": true,
+      "task_kinds": [
+        "explanation",
+        "verification",
+        "discovery"
+      ],
+      "path_prefixes": [
+        "cmd"
+      ],
+      "source": {
+        "path": "docs/rules.md",
+        "content_digest": "SOURCE_DIGEST",
+        "lines": {
+          "start": 2,
+          "end": 3
+        }
+      },
+      "checks": [
+        {
+          "path": "docs/verification.md",
+          "content_digest": "CHECK_DIGEST",
+          "lines": null
+        }
+      ]
+    },
+    {
+      "id": "optional-background",
+      "kind": "design",
+      "required": false,
+      "task_kinds": null,
+      "path_prefixes": null,
+      "source": {
+        "path": "docs/optional.md",
+        "content_digest": "OPTIONAL_DIGEST",
+        "lines": null
+      },
+      "checks": []
+    }
+  ]
+}

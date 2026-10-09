@@ -1,0 +1,17 @@
+{
+  "schema_version": "repocue/task-benchmark-1",
+  "id": "repocue-context-explanation",
+  "task_kind": "explanation",
+  "context_file": "docs/task-context.example.json",
+  "targets": [
+    "internal/cue"
+  ],
+  "max_tokens": 5000,
+  "prompt": "Explain RepoCue's declared scope and prerequisite/build boundaries using original-source citations.",
+  "policy": {
+    "id": "example-explanation-policy",
+    "required_pairs": 3,
+    "rubric": "Claims accurately describe original README scope, prerequisites, and build boundaries; every claim cites its frozen source. Independent assessment is required.",
+    "checks": []
+  }
+}

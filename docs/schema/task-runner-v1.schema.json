@@ -1,0 +1,597 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://repocue.local/schema/task-runner-v1.schema.json",
+  "title": "RepoCue task-runner-v1",
+  "oneOf": [
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "repocue/task-runner-1"
+        },
+        "kind": {
+          "const": "request"
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cue_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "output_schema_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "output_schema_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "attempt_directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "settings": {
+          "$ref": "task-benchmark-v1.schema.json#/$defs/settings"
+        }
+      },
+      "required": [
+        "schema_version",
+        "kind",
+        "attempt_id",
+        "repository",
+        "task_file",
+        "cue_file",
+        "prompt_file",
+        "output_schema_file",
+        "output_schema_digest",
+        "attempt_directory",
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "repocue/task-runner-1"
+        },
+        "kind": {
+          "const": "observation"
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "codex_version": {
+          "type": "string"
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "prompt_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cue_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output_schema_digest": {
+          "anyOf": [
+            { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+            { "type": "null" }
+          ]
+        },
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "failed",
+            "invalid",
+            "cancelled"
+          ]
+        },
+        "usage_events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "turn": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "input_tokens": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "cached_input_tokens": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "output_tokens": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reasoning_output_tokens": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "turn",
+              "input_tokens",
+              "cached_input_tokens",
+              "output_tokens",
+              "reasoning_output_tokens"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "usage_complete": {
+          "type": "boolean"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "exit_code": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "output": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "output_complete": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "command",
+              "status",
+              "exit_code",
+              "output",
+              "output_complete"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "final_response": {
+          "anyOf": [
+            {
+              "$ref": "task-answer-v1.schema.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "kind",
+        "attempt_id",
+        "codex_version",
+        "duration_ms",
+        "prompt_digest",
+        "cue_digest",
+        "output_schema_digest",
+        "argv",
+        "status",
+        "usage_events",
+        "usage_complete",
+        "commands",
+        "final_response",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  ],
+  "$defs": {
+    "request": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "repocue/task-runner-1"
+        },
+        "kind": {
+          "const": "request"
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "repository": {
+          "type": "string",
+          "minLength": 1
+        },
+        "task_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "cue_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "output_schema_file": {
+          "type": "string",
+          "minLength": 1
+        },
+        "output_schema_digest": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "attempt_directory": {
+          "type": "string",
+          "minLength": 1
+        },
+        "settings": {
+          "$ref": "task-benchmark-v1.schema.json#/$defs/settings"
+        }
+      },
+      "required": [
+        "schema_version",
+        "kind",
+        "attempt_id",
+        "repository",
+        "task_file",
+        "cue_file",
+        "prompt_file",
+        "output_schema_file",
+        "output_schema_digest",
+        "attempt_directory",
+        "settings"
+      ],
+      "additionalProperties": false
+    },
+    "observation": {
+      "type": "object",
+      "properties": {
+        "schema_version": {
+          "const": "repocue/task-runner-1"
+        },
+        "kind": {
+          "const": "observation"
+        },
+        "attempt_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "codex_version": {
+          "type": "string"
+        },
+        "duration_ms": {
+          "type": "number",
+          "minimum": 0
+        },
+        "prompt_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "cue_digest": {
+          "anyOf": [
+            {
+              "type": "string",
+              "pattern": "^sha256:[0-9a-f]{64}$"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "output_schema_digest": {
+          "anyOf": [
+            { "type": "string", "pattern": "^sha256:[0-9a-f]{64}$" },
+            { "type": "null" }
+          ]
+        },
+        "argv": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "status": {
+          "enum": [
+            "completed",
+            "failed",
+            "invalid",
+            "cancelled"
+          ]
+        },
+        "usage_events": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "turn": {
+                "type": "integer",
+                "minimum": 1
+              },
+              "input_tokens": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "cached_input_tokens": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "output_tokens": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "reasoning_output_tokens": {
+                "anyOf": [
+                  {
+                    "type": "integer",
+                    "minimum": 0
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              }
+            },
+            "required": [
+              "turn",
+              "input_tokens",
+              "cached_input_tokens",
+              "output_tokens",
+              "reasoning_output_tokens"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "usage_complete": {
+          "type": "boolean"
+        },
+        "commands": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": {
+                "anyOf": [
+                  {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "command": {
+                "type": "string",
+                "minLength": 1
+              },
+              "status": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "exit_code": {
+                "anyOf": [
+                  {
+                    "type": "integer"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "output": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "output_complete": {
+                "type": "boolean"
+              }
+            },
+            "required": [
+              "id",
+              "command",
+              "status",
+              "exit_code",
+              "output",
+              "output_complete"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "final_response": {
+          "anyOf": [
+            {
+              "$ref": "task-answer-v1.schema.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "error": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "required": [
+        "schema_version",
+        "kind",
+        "attempt_id",
+        "codex_version",
+        "duration_ms",
+        "prompt_digest",
+        "cue_digest",
+        "output_schema_digest",
+        "argv",
+        "status",
+        "usage_events",
+        "usage_complete",
+        "commands",
+        "final_response",
+        "error"
+      ],
+      "additionalProperties": false
+    }
+  }
+}

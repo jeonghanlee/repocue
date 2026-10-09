@@ -1,0 +1,26 @@
+{
+  "schema_version": "repocue/task-benchmark-1",
+  "id": "repocue-context-verification",
+  "task_kind": "verification",
+  "context_file": "docs/task-context.example.json",
+  "targets": [
+    "internal/cue"
+  ],
+  "max_tokens": 5000,
+  "prompt": "Execute the frozen required verification command and report its actual outcome with original-source references.",
+  "policy": {
+    "id": "example-verification-policy",
+    "required_pairs": 3,
+    "rubric": "The unique frozen command has identified completion, matching exit, and complete expected output.",
+    "checks": [
+      {
+        "id": "required-go-tests",
+        "command": "go test ./...",
+        "expected_exit": 0,
+        "output_contains": [
+          "ok"
+        ]
+      }
+    ]
+  }
+}

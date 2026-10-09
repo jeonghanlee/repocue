@@ -153,3 +153,31 @@ version-2 DB. Valid zero scanned bytes remain zero. Partial known-only
 statistics never replace full totals, trends, maintenance, or break-even.
 DB size is a dated current observation; historical size and routine cue-runtime
 trends have no retained measurement path.
+
+## Independent task context values
+
+`repocue/task-context-1` is an author-owned tracked declaration, not a SQLite
+table. Each item has stable ID/kind, explicit task/path dimensions, required
+status, primary source, and supporting check references. A source identity
+hashes canonical path, expected full-file digest, and inclusive range.
+The declaration digest belongs to its maintained snapshot.
+
+`repocue/task-cue-1` contains repository/epoch/snapshot/basis/freshness,
+declaration identity, normalized request, required IDs, whole delivered
+items/sources, extracted text digests, and optional omission accounting.
+Source text is transient. Existing cue metrics record view `task`.
+
+Benchmark, answer, runner, and evaluation have independent task version 1.
+External evaluation values contain frozen task/policy/rate/schema digests, settings,
+content fingerprints, full CLI costs, raw-artifact digests, and every attempt.
+Attempt journals distinguish started, completed, failed, invalid, and cancelled.
+Pair reports bind the actual answer schema with `output_schema_digest`.
+Runner requests require that digest; observations retain the captured digest
+or null when schema capture is unavailable. Each attempt stores the schema
+bytes passed through its captured invocation.
+
+Summary inventory keeps delivery, correctness, compliance, metric status,
+eligibility, and errors separately. Per-metric paired coverage and differences
+remain separate from a gated verdict. Assessments bind exact task/policy,
+attempt/answer, source basis, assessor, and rubric. No task result is a
+calibration reference. See [Task contracts](TASK_CONTEXT.md).

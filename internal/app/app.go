@@ -19,6 +19,7 @@ import (
 	"github.com/jeonghanlee/repocue/internal/repository"
 	"github.com/jeonghanlee/repocue/internal/snapshot"
 	"github.com/jeonghanlee/repocue/internal/storage"
+	"github.com/jeonghanlee/repocue/internal/taskcontext"
 )
 
 type App struct {
@@ -67,6 +68,8 @@ func init() {
 			evaluationContractNote, App.runEvaluate},
 		{"evaluate-m2", "[flags]", "Run the five-condition M2 evaluation and publish one report set",
 			evaluationContractNote, App.runEvaluateM2},
+		{"evaluate-task", "[flags] | summary [flags]", "Prepare task context, explicitly run one pair, or summarize retained attempts",
+			"Task contracts and evidence are separate from direct/basic calibration.", App.runEvaluateTask},
 	}
 }
 
@@ -328,10 +331,14 @@ func (a App) runCue(ctx context.Context, args []string) error {
 	flags := newFlagSet("cue")
 	repositoryPath := flags.String("repository", ".", "repository path")
 	cacheDir := flags.String("cache-dir", "", "cache root")
-	view := flags.String("view", "overview", "cue view: overview, ranked, provenance, or placebo; delta or delta-v2 with --since")
+	view := flags.String("view", "overview", "cue view: overview, task, ranked, provenance, or placebo; delta or delta-v2 with --since")
 	since := flags.String("since", "", "starting snapshot id for a delta view (overview becomes delta)")
 	pathPrefix := flags.String("path", "", "path filter for provenance")
 	maxTokens := flags.Int("max-tokens", 500, "maximum estimated tokens")
+	contextFile := flags.String("context-file", "", "tracked task-context declaration (task view)")
+	taskKind := flags.String("task-kind", "", "explicit declared task kind (task view)")
+	var targets stringList
+	flags.Var(&targets, "target", "repository-relative target; repeat for multiple targets (task view)")
 	if err := a.parseFlags(flags, args); err != nil {
 		return err
 	}
@@ -340,6 +347,21 @@ func (a App) runCue(ctx context.Context, args []string) error {
 	}
 	if *maxTokens < 1 {
 		return errors.New("max-tokens must be positive")
+	}
+	taskFlags, legacyTaskFlags := false, false
+	flags.Visit(func(value *flag.Flag) {
+		switch value.Name {
+		case "context-file", "task-kind", "target":
+			taskFlags = true
+		case "since", "path":
+			legacyTaskFlags = true
+		}
+	})
+	if *view != "task" && taskFlags {
+		return errors.New("task inputs require --view task")
+	}
+	if *view == "task" && (legacyTaskFlags || *contextFile == "" || *taskKind == "" || len(targets) == 0) {
+		return errors.New("task view requires context-file, task-kind and target, and rejects since/path")
 	}
 	repo, store, err := a.repositoryAndStore(ctx, *repositoryPath, *cacheDir)
 	if err != nil {
@@ -374,6 +396,9 @@ func (a App) runCue(ctx context.Context, args []string) error {
 		sincePointer = since
 	} else {
 		switch actualView {
+		case "task":
+			serialized, estimated, err = taskCue(ctx, repo, state, *contextFile,
+				taskcontext.Request{TaskKind: *taskKind, Targets: targets}, freshness, *maxTokens)
 		case "overview":
 			serialized, estimated, err = cue.Overview(state, freshness, *maxTokens)
 		case "placebo":

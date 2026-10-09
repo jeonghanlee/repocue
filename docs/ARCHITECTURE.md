@@ -228,3 +228,32 @@ time. Neither proves SQLite publication time. Missing measurements and
 ambiguous legacy zeros cannot become observed savings. See
 [ADR 0002](adr/0002-quantitative-reporting.md) and
 [Evaluation](EVALUATION.md#quantitative-reporting).
+
+## Task context and evidence boundary
+
+`internal/taskcontext` strictly parses tracked declarations, selects explicit
+task/path applicability, and streams pinned original source ranges.
+`internal/cue` assembles the complete required task envelope before optional
+whole units. `internal/app` validates the live snapshot before and after
+extraction. SQLite stores existing file metadata and cue metrics; it stores
+no instruction text and receives no task schema migration.
+
+`internal/taskbenchmark` binds selector-derived required IDs and original
+references to task-specific outcomes. It separates actual provision,
+verification completion, correctness, and semantic assessment.
+`internal/codexadapter` captures task stdin, the digest-checked answer schema,
+invocation, raw streams, and only
+supported usage/completion/output fields through a separate exact-version route.
+The provider receives the captured attempt-local schema. Summary checks it
+against the frozen pair schema, runner request, observation, and invocation.
+
+`internal/evaluation` prepares actual overview/task CLI outputs, creates
+external attempts before model launch, checks pre/post content fingerprints,
+and retains failures. Summary reads retained files without starting a process.
+Digest consistency and frozen policy guard paired descriptive comparisons;
+they are not provider signatures or permission enforcement.
+
+Task execution is opt-in and bounded to one pair per invocation. Local
+fixtures replace only external Codex. Paid execution and evidence capability
+preflight are separate. See [Task contracts](TASK_CONTEXT.md) and
+[ADR 0003](adr/0003-task-context-delivery-and-evidence.md).

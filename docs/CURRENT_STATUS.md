@@ -1,6 +1,6 @@
 # RepoCue Current Status
 
-Updated: 2026-09-08 UTC
+Updated: 2026-10-08 UTC
 
 ## Accepted Foundation
 
@@ -72,6 +72,23 @@ No real model run is authorized. Writable local cache access remains a
 measurement preflight requirement; the earlier read-only sandbox observation
 has not been resolved. M2 remains Blocked on G1 approval; see the canonical
 M2 preflight and G1 for the remaining measurement conditions and cost checkpoint.
+
+## Task context implementation
+
+Task context implementation provides separate version-1 contracts, pinned
+original-source delivery, whole-unit budgeting, and an opt-in one-pair local
+evaluation path. Built CLI/runner tests with real Git/SQLite and only external
+Codex substituted cover successful checks, retained failures, cancellation,
+source mutation, missing evidence, and cheaper wrong responses. Frozen and
+provider-supplied answer-schema bytes are digest-bound. Summary rejects changed
+schema/request evidence and resolves relative and symlink directory aliases.
+
+M4 remains In progress until required distribution/documentation/independent
+acceptance checks and Git landing are recorded in the canonical milestone.
+M5 remains Blocked on M4 and G3. No paid task experiment, real provider evidence
+capability, account billing, or task-context savings has been measured.
+The [task benchmark reference](benchmarks/task-context-v1.md) lists the exact
+paid preflight and proposed pilot/continuation schedule.
 
 ## Deferred Scope
 

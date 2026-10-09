@@ -245,3 +245,40 @@ invented. Current validation cost is visible separately. See
 [CLI usage](CLI.md#quantitative-reports) for import, cutoffs, and external
 periodic publication. Fresh real-agent calibration remains separately
 authorized; reporting installs no scheduler and launches no model.
+
+## Independent task comparison
+
+`evaluate-task` compares an existing overview with original task context using
+task-specific benchmark, answer, runner, and evaluation contracts.
+Preparation invokes no agent by default. Explicit runner mode performs one
+ordered pair. A separate summary launches no process.
+
+Actual CLI process costs include complete stdout, duration, bytes, estimate,
+exit, and digest. Refresh maintenance is separate; initial baseline cost
+remains unavailable in this path. Adapter wall time is not task-ready latency.
+CPU, memory, filesystem I/O, and account billing remain `not_observed`.
+
+Attempts are recorded before launch outside the evaluated checkout. Raw
+provider/runner streams and pre/post content evidence survive failures,
+invalid output, cancellation, and source mutation. Incomplete journals remain
+visible. No retry or continuation is automatic.
+
+Discovery scoring compares actual selector-derived required IDs and sources.
+Verification needs every frozen command's identified completion, expected exit,
+and complete matching output. Explanation needs independent cited-source
+assessment. Provision, execution, correctness, and compliance remain distinct.
+
+Credit uses complete compatible usage and dated per-million-token credit
+rates. Cached input and reasoning output are subsets; cue tokens are already
+input. Missing cost data cannot be zero-filled or replaced by partial totals.
+Wrong answers remain in cost inventory.
+
+Summary validates frozen and captured evidence, then calculates matched
+overview-minus-task differences before medians/ranges. Required pair coverage,
+successful tasks, and complete delivery gate the verdict. Three repeats are
+descriptive. Local fixture results do not establish real savings.
+
+The [task benchmark reference](benchmarks/task-context-v1.md) defines the
+three examples, fixed nine-pair schedule, independent assessment bindings,
+provider evidence limitations, and paid preflight. Canonical M5 / G3 retains
+model, policy, rates, spending, evidence, and pilot-continuation decisions.
