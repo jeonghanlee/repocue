@@ -15,7 +15,7 @@ Canonical branch or ref: master
 Git upstream: origin/master
 Remote tracker: none
 
-Next session entry point: review the accepted M4 implementation for separately authorized Git landing. P001-P007 and corrected T1-T8 are locally verified; both independent implementation lanes accept hand20261008_165535. M4 remains In progress until landing evidence is recorded. M5 needs M4 and separately accepted G3 provider/settings/rates/evidence/budget/pilot conditions before any real model run; the separate M2 / G1 calibration remains unchanged.
+Next session entry point: prepare the exact G3 model/settings/rates/evidence/budget and first-pair conditions for User acceptance. M4 implementation is landed in edd3dc23203f9b79c6cff9b9103a156716299549 with corrected T1-T8 and post-EOF fixture verification. M5 remains Blocked by Open G3; its draft plan and paid execution require separate acceptance and authorization. The separate M2 / G1 calibration remains unchanged.
 
 ## Milestone
 
@@ -27,7 +27,7 @@ Next session entry point: review the accepted M4 implementation for separately a
 | M3 | M2 | Initial repository calibration and report | Milestone | Blocked | No | M1, M3, G1 | At least three controlled direct/basic pairs produce a reproducible calibration and first report without modifying the evaluated repository; [detail](#m2---initial-repository-calibration-and-report) |
 | M3 | M3 | Token usage absence and report compatibility | Milestone | Complete | No | M1, D2, D14, D24 | Landed in 8d61f6e; missing counters remain unavailable; v4 execution and unchanged v3 reads pass M3 / T1-T4; [detail](#m3---token-usage-absence-and-report-compatibility) |
 | M3 | G1 | Calibration evidence authorization | External gate | Open | No | | The User authorizes either a verified retained report set or the cost and conditions of new Codex runs; [detail](#g1---calibration-evidence-authorization) |
-| Task context | M4 | Task-specific context delivery and local measurement readiness | Milestone | In progress | No | G2, G4, D25-D30 | Reviewed versioned contracts, shipped task cue, source delivery evidence, and local T1-T8 verification; [detail](#m4---task-specific-context-delivery-and-local-measurement-readiness) |
+| Task context | M4 | Task-specific context delivery and local measurement readiness | Milestone | Complete | No | G2, G4, D25-D30 | Landed in edd3dc2; versioned contracts, shipped task cue, source delivery evidence, T1-T8 and post-EOF fixture verification; [detail](#m4---task-specific-context-delivery-and-local-measurement-readiness) |
 | Task context | M5 | Task-context agent comparison | Milestone | Blocked | No | M4, G3, D25-D30 | Three controlled task comparisons retain cost, delivery, execution, and correctness evidence without unsupported savings claims; [detail](#m5---task-context-agent-comparison) |
 | Task context | G2 | Independent review session configuration | External gate | Complete | No | | User confirmed L size, Mode B, two independent Reviewers and root coordination/implementation; publication remains separately authorized; [detail](#g2---independent-review-session-configuration) |
 | Task context | G3 | Task-context experiment conditions and cost authorization | External gate | Open | No | | Authorize exact model, basis, run count, rate record, evidence location, and spending stop conditions; [detail](#g3---task-context-experiment-conditions-and-cost-authorization) |
@@ -1112,7 +1112,7 @@ cannot reconstruct these request-level charges.
 Origin: 10a4f02 / M4
 Identity History: none
 GitHub Issue: none
-Status: In progress
+Status: Complete
 
 ##### Summary
 
@@ -1284,12 +1284,36 @@ These policies describe declared coverage, not all runtime instructions.
 | T7 | 2026-10-08 16:48:31 UTC | Linux amd64; CGo disabled; Windows amd64 cross-build | Passed | Correction `make build.repocue build.linux-amd64 build.windows-amd64` exits zero; actual `file`/`readelf` observes static Linux ELF with no INTERP and Windows PE32+. Windows execution is unverified. |
 | T8 | 2026-10-08 17:10:29 UTC | Source and generated mdBook; independent Mode B lanes | Passed | Correction `make docs.build` and `git diff --check` exit zero; all nine M/G rows have exactly one detail, both M4 T-label sets are T1-T8, and all 15 local SUMMARY and 37 changed-document links resolve. Both second/third-person follow-ups accept hand20261008_165535: I1 fup20261008_170345 and I2 fup20261008_170912. Root reads both reports and rechecks all 52 target hashes at the recorded observation. Each lane executes current shipped fixtures and docs independently; no provider capability, billing or savings is inferred. |
 
+Post-EOF fixture verification: the actual shipped CLI/runner and real Git/SQLite
+fixtures passed `go test ./internal/app -run '^(TestTaskCueShipped|TestTaskEvaluationShipped)' -count=1 -v`
+with exit 0, 12 top-level tests and package time 26.692s. The retained result
+was rechecked at 2026-10-09 04:28:25 UTC; this is not a fresh full/race/build
+rerun. Each of four source fixtures lost only one extra terminal LF; all other
+accepted source bytes were preserved. Independent EOF checks accepted the
+exact correction and current derivatives: E1 cmt20261009_041019 executed all
+four shipped TaskCue tests, and E2 cmt20261009_041323 executed all eight shipped
+TaskEvaluation tests. Only the external Codex provider is substituted.
+
 ##### Closure Evidence
 
-- Local implementation, corrected T1-T8 verification and both independent
-  implementation acceptances are observed above. Git landing remains pending. No paid model run,
-  actual provider-capability verification, billing measurement, commit or push
-  occurred. M4 remains In progress; M5 remains Blocked.
+- Completed on 2026-10-09 UTC: implementation, corrected T1-T8, both independent
+  implementation acceptances, post-EOF fixture verification and Git landing
+  satisfy M4 completion criteria. G2 and G4 are Complete; no linked issue exists.
+- Source commit: `edd3dc23203f9b79c6cff9b9103a156716299549`, parent
+  `34d6d902365fb9ff4292996cafe0c18fd50c7d71`. All 52 committed paths and blob
+  hashes matched the accepted EOF inventory before publication.
+- Observed at 2026-10-09 04:28:25 UTC after `git fetch origin`: local master,
+  fetched `origin/master` and source commit above are identical, with ahead/behind
+  counts 0/0 and a clean working tree before this record update. The actual
+  upstream state and committed source paths were checked; a push exit alone
+  is not used as landing evidence.
+- Recheck with `git fetch origin`, `git rev-parse HEAD origin/master` and
+  `git merge-base --is-ancestor edd3dc23203f9b79c6cff9b9103a156716299549 origin/master`.
+  Later documentation commits may advance HEAD; the source commit must remain
+  an ancestor of origin/master.
+- No real paid-model run, actual provider-capability verification, account
+  billing measurement or credit savings was observed. M5 remains Blocked by
+  Open G3; M2 / G1 and their separate conditions are unchanged.
 
 ##### Plan Review Evidence
 
