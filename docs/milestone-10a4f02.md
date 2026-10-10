@@ -16,7 +16,7 @@ Canonical branch or ref: master
 Git upstream: origin/master
 Remote tracker: none
 
-Next session entry point: accept the independently reviewed Sonnet 5.5 support P008-P009 (plan20261009_092451) and the Codex CLI companion P010-P011 (plan20261009_160442), then record their local implementation authority. The User selected Codex CLI alongside Sonnet on 2026-10-09. Codex uses existing M5 overview/task measurement; Claude API uses M6. The two-request G6 pilot and USD 0.10 allowance remain proposed, not authorized, and do not apply to Codex. Completed local M6 P001-P006 authority does not cover these new proposals. No real-provider request or savings observation exists. M5/G3 and M6/G6 remain separately Blocked/Open; publication needs separate authority. M2/G1 is unchanged.
+Next session entry point: use the local extension execution handoff under work/review_sessions/20261009_072038_prompt-caching/handoff/ to bind exact paid conditions to the final no-model inputs. Sonnet P008-P009 (plan20261009_092451) and Codex CLI P010-P011 (plan20261009_160442) are implemented under auth20261010_025018; both independent implementation reviews accepted the target with zero findings/blockers, and local source, race and distribution checks passed. G6's two-request Sonnet pilot and USD 0.10 allowance remain proposed and do not apply to Codex; G3 still needs exact Codex model/settings, applicable dated credit rates, assessment and spending conditions. No real-provider request or savings observation exists. M5/G3 and M6/G6 remain separately Blocked/Open; new commit/push needs separate authority. Prior P001-P006 landed in d6f94b7. M2/G1 is unchanged.
 
 ## Milestone
 
@@ -1473,11 +1473,11 @@ Superseded Plan Artifacts: none
    conversation experiment if required. A multi-turn runner and fixed turn
    sequence need their own plan; fresh-session results cannot substitute.
 
-###### Proposed Codex CLI Companion
+###### Accepted Codex CLI Companion
 
-Plan Status: draft
-Plan Acceptance: none
-Implementation Authorization: none
+Plan Status: accepted
+Plan Acceptance: 2026-10-09; plan20261009_160442 accepted through current User continuation
+Implementation Authorization: 2026-10-09; auth20261010_025018; P010-P011 only
 Superseded Plan Artifacts: none
 
 Named additive proposal: plan20261009_160442 under
@@ -1486,8 +1486,17 @@ existing CLI measurement alongside Claude API evaluation in
 `docs/PROMPT_CACHING.md` and `docs/EVALUATION.md`. P011 runs actual no-model
 preparation for the first explanation A/B pair and records M5 / T1 evidence.
 It preserves the original six-step M5 plan, balanced nine-pair schedule,
-source pins, task-first prompt, runner and public schemas. Both items remain
-unaccepted and unauthorized; no model run or successful preflight is claimed.
+source pins, task-first prompt, runner and public schemas. Decision Date:
+2026-10-09. The User accepted and authorized both local items after review.
+P010 documentation and P011 no-model preparation are implemented. Initial
+preparation passed at the basis recorded in M5 / T1. Independent implementation
+reviews rev20261010_031022 (C1) and rev20261010_030956 (C2) accepted the unchanged
+six-file target, including C2's second-person operational-document pass;
+conv20261010_031713 records zero findings/blockers and review 1 per lane.
+Final-state preparation follows this tracked record update; its actual child,
+pins, executable identity and result belong in the execution handoff under the
+same session. An initial preparation is not valid for a later changed basis.
+No model run is claimed.
 
 The measurements are total input, cached-input subset, output, optional
 reasoning-output subset, complete dated credit estimate, cue/adapter duration,
@@ -1519,7 +1528,7 @@ No model, successful preflight, cache saving or account charge was observed.
 
 | Label | Observed At | Environment | Result | Evidence |
 | --- | --- | --- | --- | --- |
-| T1 | Not run | Reviewed M4 basis | Pending | none |
+| T1 | 2026-10-10 03:02:00 UTC | Go 1.27.1 built CLI; initialized maintained cache; no runner | Passed for input readiness | Actual tracked explanation preparation at /tmp/repocue-codex-cli-pilot/task-pair-1747805210; raw refresh/overview/task outputs, policy/schema/source pins, timings and complete dirty content basis retained; zero attempts and null model settings. Executable digest recorded separately under /tmp/repocue-local-extensions.UYcRIY. Final-state binding follows tracked administrative updates; no correctness, cache or savings result. |
 | T2 | Not run | Actual Codex | Pending | G3 remains Open |
 | T3 | Not run | Actual Codex | Pending | G3 and pilot continuation remain unresolved |
 | T4 | Not run | Retained evidence | Pending | none |
@@ -1587,7 +1596,7 @@ local tests is not authority for real paid model executions.
 
 | Observed At | Result | Evidence |
 | --- | --- | --- |
-| Not run | Pending | No model, rate record, exact basis, or spending authority selected |
+| 2026-10-10 03:02:00 UTC | Pending paid authority | Codex CLI selected and no-model inputs prepared; no model, applicable rate record, assessor or spending authority selected. M5 / T1 is input-readiness evidence only. |
 
 ##### Closure Evidence
 
@@ -1699,8 +1708,9 @@ G6 independently owns paid Claude API conditions and cost authority. G5 is
 Complete; G6 is Open. Local implementation is authorized and locally verified; resume as
 In progress after all external gates complete. D26-D30 apply.
 Registration alone does not select a model, API version, TTL, schema, run count
-or budget. The User selected Sonnet 5.5 on 2026-10-09; proposed local support
-and paid conditions below still require their separate acceptance and authority.
+or budget. The User selected Sonnet 5.5 on 2026-10-09 and subsequently accepted
+and authorized P008-P009 local support through auth20261010_025018.
+Paid conditions below still require their separate acceptance and authority.
 The User selected M6 plan preparation as the current priority on
 2026-10-09. Implementation and experiment order relative to M2 or M5 remains
 unassigned.
@@ -1799,9 +1809,10 @@ silently removing constraints or launching another request.
 
 ###### File-Level Steps
 
-The P labels below are local to M6. P001-P006 are implemented in the local
-worktree and verified below. P007 remains blocked by G6. Paths marked new
-identify files introduced by this implementation; no landing is established.
+The P labels below are local to M6. P001-P006 landed in
+d6f94b7260f9d84b98e6b67e67dcf82b28926ac6 and are verified below.
+P007 remains blocked by G6. Paths marked new identify files introduced by
+that implementation; P008-P009 extension changes remain uncommitted.
 
 | Plan Item | Files Or Subsystem | Intended Change | Verification |
 | --- | --- | --- | --- |
@@ -1882,11 +1893,11 @@ The full request count, model/API versions, TTL/minimum length, workspace
 scope, output limits, dated rates, assessment policy and spending controls
 remain pending G6. A token or request limit is not a guaranteed billing cap.
 
-###### Proposed Sonnet 5.5 Extension
+###### Accepted Sonnet 5.5 Extension
 
-Plan Status: draft
-Plan Acceptance: none
-Implementation Authorization: none
+Plan Status: accepted
+Plan Acceptance: 2026-10-09; plan20261009_092451 accepted through current User continuation
+Implementation Authorization: 2026-10-09; auth20261010_025018; P008-P009 only
 Superseded Plan Artifacts: none
 
 Decision Date: 2026-10-09. The User selected `claude-sonnet-5-5` [6] during
@@ -1895,18 +1906,23 @@ accepted P001-P006 plan or its completed observations. That authorization does
 not cover this profile extension. Named proposal: plan20261009_092451 under
 `work/review_sessions/20261009_072038_prompt-caching/plan/`; its attachment
 `sonnet55-pilot.json` is proposed configuration, not a prepared request.
+Decision Date: 2026-10-09. The User accepted and authorized the reviewed local
+P008-P009 extension. Local implementation, source checks and independent
+implementation review are complete. C1 rev20261010_031022 and C2
+rev20261010_030956 accepted the current target with zero findings/blockers;
+conv20261010_031713 records review 1 per lane. G6 and paid P007 remain excluded.
+The prior named proposal and its historical observations stay intact.
 
-The current supported-model list excludes Sonnet 5.5. Its default adaptive
-thinking also differs from the current single-text-answer contract. Proposed
-fixed settings are `thinking.type=between_tools` and
+Sonnet 5.5's default adaptive thinking differs from the current single-text-
+answer contract. The implemented fixed settings are `thinking.type=between_tools` and
 `output_config.effort=high`; without tools this model returns text [7].
 Structured JSON remains the existing format [5]. Include these settings in
 reusable identity and retain exact older profiles' wire bytes and identities.
 
 | Plan Item | Files | Intended Change | Verification |
 | --- | --- | --- | --- |
-| P008 | `internal/promptcache/types.go`, `context.go` | Add only the exact Sonnet 5.5 profile and fixed thinking/effort fields; omit new fields for older models; unknown profiles still fail before HTTP. | Proposed extension of M6 / T1, T2, T4, T6 |
-| P009 | `internal/app/cache_evaluation_test.go`, `docs/PROMPT_CACHING.md`, `docs/adr/0004-provider-prompt-caching.md` | Exercise real CLI prepare/run/summary with only outer TLS substituted; capture exact profile, preserve legacy bytes, retain failed usage/cost and document fixed settings. | Proposed extension of M6 / T1-T7, T9 |
+| P008 | `internal/promptcache/types.go`, `context.go` | Add only the exact Sonnet 5.5 profile and fixed thinking/effort fields; omit new fields for older models; unknown profiles still fail before HTTP. | Implemented; M6 / T1, T2, T4, T6 |
+| P009 | `internal/app/cache_evaluation_test.go`, `docs/PROMPT_CACHING.md`, `docs/adr/0004-provider-prompt-caching.md` | Exercise real CLI prepare/run/summary with only outer TLS substituted; capture exact profile, preserve legacy bytes, retain failed usage/cost and document fixed settings. | Implemented; M6 / T1-T7, T9; both independent lanes accepted |
 
 Order: P008, P009 and local checks, real no-network preparation, exact G6 paid
 approval, then the bounded pilot portion of P007. Exact local commands remain
@@ -1937,6 +1953,61 @@ digest remained
 The proposal attachment's JSON parameter checks passed; actual successful
 preparation and Sonnet checks remain Pending. No broad source tests were
 repeated for this documentation-only preparation.
+
+Local extension verification observed at 2026-10-10 03:05:01 UTC:
+
+- M6 / T1, T2, T4-T7: `TestCacheEvaluationShippedSonnet55Profile` uses the real
+  built CLI, Git, SQLite and only an outer TLS fixture. Before the profile
+  edit it failed preparation with the unsupported-model error. Afterward the
+  full shipped cache selection passed in 32.150 seconds. Exact thinking,
+  effort, retained schema/cache boundary, changing task/Git suffix, request
+  limits, unknown-model zero launches, model mismatch and unsuccessful thinking
+  answer cost are covered. Synthetic USD values are software evidence only.
+- M6 / T1-T7, T9: promptcache and claudeadapter count-1 checks, `make check`
+  and `make test.race` exited 0 with Go 1.27.1. Full app suite durations were
+  113.465 and 189.226 seconds. CLI/Linux/Windows targets exited 0; actual Linux
+  ELF has no INTERP and Windows artifact is x86-64 PE32+. Native Windows and
+  actual provider behavior were not tested. Final documentation checks follow
+  the administrative records.
+- M6 / T2, T6, T9: before production edits, the old built CLI captured six
+  legacy profiles and 24 requests under /tmp/repocue-legacy-profiles.78f2px.
+  The new built CLI reconstructed every complete retained request byte-for-byte,
+  including its prefix identity, and all six old/new summaries were identical.
+  Old executable SHA-256: 0dc441ab9bee4b88c3b6b4a110bbadf962234aeed24d08059d583e601dca44e6;
+  new: 34268a69d31c87180c50dab2f32e57c2815481191d2601986bbea5ec212ce9e8.
+- Initial real Sonnet preparation passed at 2026-10-10 03:02:00 UTC under
+  /tmp/repocue-sonnet55-pilot/cache-eval-2434897662, with the API key absent
+  from its process environment. No run was selected. Actual benchmark, source
+  cue, answer schema, two requests, preparation timings and complete content
+  basis are retained. README/declaration pins remained unchanged. The initialized
+  cache resolved to /home/jeonglee/.cache/repocue and was neither initialized,
+  copied nor relocated. Final-state binding follows tracked record updates;
+  this first preparation does not authorize use against a changed basis.
+- The two independent implementation lanes review the frozen six-file product
+  target via cmt20261010_030606. G6 / T8 remains Pending; no provider cache,
+  billing, correctness/compliance assessment or savings observation exists.
+
+Local extension review observed at 2026-10-10 03:17:13 UTC:
+
+- C1 rev20261010_031022 and C2 rev20261010_030956 each accepted implementation
+  review 1 of ordered six-file digest
+  5c15b184aba0809d6c7d33af08d36c380453424dbedcd5fc7bf5b37d99685c5d.
+  Both have zero findings/blockers. C1 independently executed all five Sonnet
+  subtests and the 24-request legacy reconstruction; C2 independently executed
+  TaskCredit and the shipped task-pair test, and completed the operational
+  documents' second-person pass. conv20261010_031713 records the result;
+  no correction cycle, additional feature or paid authority follows.
+- `make docs.build` and `git diff --check` exited 0 at 03:12:32 UTC after the
+  executable-identity documentation correction. Final record checks and
+  no-model preparations follow this tracked update. The execution handoff
+  records their actual outcomes and final content basis without another tracked
+  edit. Codex's empty preparation summary is not input-integrity verification;
+  inspect its actual retained files and pins separately.
+- The installed CLI's bootstrap refresh failed during resume, before the
+  03:17:03 UTC status observation, with unsupported
+  SQLite schema version 3. No cache change or repair followed. The built CLI
+  that already prepared both initial inputs remains the planned executable.
+  The existing initialized store stays at its configured location.
 
 ###### Planned Commands
 
@@ -1992,9 +2063,9 @@ cross-build does not establish native Windows execution.
 
 ##### Closure Evidence
 
-- Local P001-P006 implementation and final T1-T7/T9 checks exist in the
-  uncommitted worktree. Both independent implementation lanes accepted the
-  corrected target with zero remaining blockers.
+- Local P001-P006 implementation and final T1-T7/T9 checks landed in
+  d6f94b7260f9d84b98e6b67e67dcf82b28926ac6. Both independent implementation
+  lanes accepted that corrected target with zero remaining blockers.
 - Initial implementation reviews: C1 rev20261009_084615 accepted its lane;
   C2 rev20261009_084722 found F-codex_gpt6_cache_c2-001, dropped absolute HTTP
   timestamps needed for TTL evidence. The approved timing retention path is
@@ -2006,7 +2077,8 @@ cross-build does not establish native Windows execution.
   2fd82ca60fef4df964fc6b4abaf8e59eb19c721dc6ee6db04c53ee60f9d9abb6.
 - G6 / T8 remains pending. No real-provider request, cache observation, account
   billing or real savings result exists. Synthetic TLS values verify software
-  behavior only. M6 remains Blocked; no commit, push or landing evidence exists.
+  behavior only. M6 remains Blocked. New P008-P009 changes are uncommitted;
+  the prior local implementation's landing does not establish paid verification.
 - ADR promotion: docs/adr/0004-provider-prompt-caching.md; operational contract:
   docs/PROMPT_CACHING.md. G5 acceptance does not authorize paid execution.
 
@@ -2088,15 +2160,18 @@ task-quality assessment, spending controls and continuation conditions.
 
 | Observed At | Result | Evidence |
 | --- | --- | --- |
-| Not run | Pending | Sonnet 5.5 selected on 2026-10-09; exact two-request conditions, dated rates and USD 0.10 allowance proposed below; no paid authority, prepared request or provider observation |
+| 2026-10-10 03:05:01 UTC | Pending paid authority | Sonnet 5.5 local profile/tests and initial no-model request preparation succeeded. Exact two-request conditions, dated rates and USD 0.10 allowance remain proposed; no paid authority or provider observation. |
 
 ##### Proposed Initial Execution Conditions
 
 Proposal Date: 2026-10-09. Acceptance: none. Paid Execution Authorization: none.
-Named proposal: plan20261009_092451. Sonnet 5.5 local support P008-P009 must be
-accepted, authorized and verified before actual preparation. The existing
-binary rejects the selected model locally; no executable Sonnet request has
-been prepared. G6 remains Open and M6 / T8 remains Pending.
+Named proposal: plan20261009_092451. Sonnet 5.5 local support P008-P009 is
+accepted and authorized through auth20261010_025018. Implementation and local
+checks passed, initial actual no-model preparation succeeded, and both
+independent implementation reviews accepted the target. Final-state request
+binding follows this tracked update; consult the execution handoff's actual
+prepared identities and result before considering paid authority. G6 remains
+Open and M6 / T8 remains Pending.
 
 | Parameter | Proposed condition |
 | --- | --- |

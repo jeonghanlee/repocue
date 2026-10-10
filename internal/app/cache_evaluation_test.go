@@ -145,6 +145,10 @@ func newCacheHTTPFixture(t *testing.T, mode string) *cacheHTTPFixture {
 		}
 		response := map[string]any{"id": "msg_fixture", "type": "message", "role": "assistant", "model": wire.Model,
 			"stop_reason": stop, "content": []any{map[string]any{"type": "text", "text": string(answerBytes)}}, "usage": usage}
+		if f.mode == "thinking" {
+			response["content"] = []any{map[string]any{"type": "thinking", "thinking": "", "signature": "fixture-signature"},
+				map[string]any{"type": "text", "text": string(answerBytes)}}
+		}
 		if f.mode == "model" {
 			response["model"] = "incompatible-model"
 		}
@@ -433,6 +437,155 @@ func cacheEvidenceHashes(t *testing.T, root string) map[string]string {
 		t.Fatal(err)
 	}
 	return result
+}
+
+func TestCacheEvaluationShippedSonnet55Profile(t *testing.T) {
+	binary := buildTaskExecutable(t, "./cmd/repocue")
+	sonnetSpec := func() promptcache.Spec {
+		s := cacheSpec()
+		s.Provider.Model = "claude-sonnet-5-5"
+		s.Rates.Model = s.Provider.Model
+		s.Rates.Input, s.Rates.Write5m, s.Rates.Write1h = "2.00", "2.50", "4.00"
+		s.Rates.Read, s.Rates.Output = "0.10", "10.00"
+		return s
+	}
+	t.Run("profile-and-cycle", func(t *testing.T) {
+		f := newTaskFixture(t, binary)
+		server := newCacheHTTPFixture(t, "")
+		spec := sonnetSpec()
+		report := prepareCacheFixture(t, f, spec)
+		if server.count() != 0 {
+			t.Fatal("preparation launched provider")
+		}
+		var prefixDigest string
+		for _, step := range spec.Steps {
+			out, stderr, err := cacheRaw(f, server, cacheFixtureKey, cacheRunArgs(report, step.ID, server)...)
+			if err != nil {
+				t.Fatalf("Sonnet profile run: %v %s %s", err, stderr, out)
+			}
+			raw, err := os.ReadFile(filepath.Join(report.Directory, "request-"+step.ID+".json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var request promptcache.Request
+			if err := taskcontext.DecodeStrict(raw, "cache-request-v1.schema.json", &request); err != nil {
+				t.Fatal(err)
+			}
+			server.mutex.Lock()
+			captured := append([]byte{}, server.requests[len(server.requests)-1]...)
+			server.mutex.Unlock()
+			if !bytes.Equal(captured, []byte(request.WireBody)) || taskBytesDigest(captured) != request.WireDigest {
+				t.Fatal("submitted Sonnet wire differs from frozen request")
+			}
+			var wire map[string]json.RawMessage
+			if err := json.Unmarshal(captured, &wire); err != nil {
+				t.Fatal(err)
+			}
+			if string(wire["model"]) != `"claude-sonnet-5-5"` || string(wire["thinking"]) != `{"type":"between_tools"}` ||
+				!bytes.Equal(wire["stream"], []byte("false")) || wire["tools"] != nil {
+				t.Fatal("fixed text-only Sonnet profile differs from submitted HTTP body")
+			}
+			var config struct {
+				Effort string `json:"effort"`
+				Format struct {
+					Type   string          `json:"type"`
+					Schema json.RawMessage `json:"schema"`
+				} `json:"format"`
+			}
+			if err := json.Unmarshal(wire["output_config"], &config); err != nil {
+				t.Fatal(err)
+			}
+			schema, err := os.ReadFile(filepath.Join(report.Directory, "answer.schema.json"))
+			if err != nil || config.Effort != "high" || config.Format.Type != "json_schema" ||
+				!bytes.Equal(config.Format.Schema, schema) {
+				t.Fatal("fixed effort or retained structured-output schema lost")
+			}
+			if step.Arm == "cache" {
+				if prefixDigest != "" && prefixDigest != request.PrefixDigest {
+					t.Fatal("unchanged Sonnet prefix acquired different identity")
+				}
+				prefixDigest = request.PrefixDigest
+			}
+		}
+		if _, _, err := cacheRaw(f, server, cacheFixtureKey, cacheRunArgs(report, "cache-b", server)...); err == nil || server.count() != spec.Limits.MaxRequests {
+			t.Fatal("request bound allowed an extra attempt")
+		}
+		summary := cacheSummaryFixture(t, f, report, "")
+		if len(summary.Errors) != 0 || len(summary.Attempts) != 4 || summary.TotalEstimatedUSD == nil || *summary.TotalEstimatedUSD != "0.00688" {
+			t.Fatalf("Sonnet full-cycle exact decimal accounting: %+v", summary)
+		}
+		if summary.Attempts[2].CacheActivity != "creation" || summary.Attempts[3].CacheActivity != "reuse" {
+			t.Fatal("Sonnet cache activity differs from actual counters")
+		}
+	})
+	t.Run("changing-task-and-basis", func(t *testing.T) {
+		f := newTaskFixture(t, binary)
+		spec := sonnetSpec()
+		readRequest := func(report evaluation.CacheReport) promptcache.Request {
+			raw, err := os.ReadFile(filepath.Join(report.Directory, "request-cache-a.json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var request promptcache.Request
+			if err := taskcontext.DecodeStrict(raw, "cache-request-v1.schema.json", &request); err != nil {
+				t.Fatal(err)
+			}
+			return request
+		}
+		first := prepareCacheFixture(t, f, spec)
+		a := readRequest(first)
+		writeFile(t, filepath.Join(f.root, "README.md"), "Unrelated repository metadata changes.\n")
+		spec.Steps[2].Prompt = "Explain the same original context differently."
+		second := prepareCacheFixture(t, f, spec)
+		b := readRequest(second)
+		if a.PrefixDigest != b.PrefixDigest || a.WireDigest == b.WireDigest || first.Basis.Fingerprint == second.Basis.Fingerprint {
+			t.Fatal("changing task/Git metadata changed the reusable Sonnet prefix")
+		}
+		cacheSummaryFixture(t, f, first, "")
+		cacheSummaryFixture(t, f, second, "")
+	})
+	for _, mode := range []string{"thinking", "model"} {
+		t.Run(mode, func(t *testing.T) {
+			f := newTaskFixture(t, binary)
+			server := newCacheHTTPFixture(t, mode)
+			spec := sonnetSpec()
+			spec.Steps = spec.Steps[2:3]
+			spec.Limits.MaxRequests = 1
+			report := prepareCacheFixture(t, f, spec)
+			if _, _, err := cacheRaw(f, server, cacheFixtureKey, cacheRunArgs(report, "cache-a", server)...); err == nil {
+				t.Fatal("unexpected response passed fixed profile")
+			}
+			summary := cacheSummaryFixture(t, f, report, "")
+			if len(summary.Attempts) != 1 || server.count() != 1 || summary.Attempts[0].Correctness.Value != nil {
+				t.Fatal("unsuccessful Sonnet attempt lost or gained correctness")
+			}
+			cost := summary.Attempts[0].EstimatedUSD
+			if mode == "thinking" {
+				if cost == nil || *cost != "0.00257" || summary.TotalEstimatedUSD == nil || *summary.TotalEstimatedUSD != *cost {
+					t.Fatal("unexpected thinking block lost known usage and cost")
+				}
+			} else if cost != nil || summary.TotalEstimatedUSD != nil {
+				t.Fatal("response model mismatch acquired a cost estimate")
+			}
+			if _, _, err := cacheRaw(f, server, cacheFixtureKey, cacheRunArgs(report, "cache-a", server)...); err == nil || server.count() != 1 {
+				t.Fatal("unsuccessful Sonnet step was retried")
+			}
+		})
+	}
+	t.Run("unknown-model", func(t *testing.T) {
+		f := newTaskFixture(t, binary)
+		server := newCacheHTTPFixture(t, "")
+		spec := sonnetSpec()
+		spec.Provider.Model = "claude-sonnet-5-5-unknown"
+		spec.Rates.Model = spec.Provider.Model
+		input := filepath.Join(f.external, "unknown-model.json")
+		taskWriteJSON(t, input, spec)
+		out, stderr, err := cacheRaw(f, server, cacheFixtureKey, "evaluate-cache", "prepare", "--repository", f.root,
+			"--cache-dir", f.cache, "--benchmark-file", input, "--output-directory", f.external)
+		if err == nil || !bytes.Contains(stderr, []byte("no supported frozen")) || server.count() != 0 {
+			t.Fatalf("unknown profile escaped zero-launch preflight: %v %s %s", err, stderr, out)
+		}
+	})
 }
 
 func TestCacheEvaluationShippedFullCycleAndReadOnlySummary(t *testing.T) {

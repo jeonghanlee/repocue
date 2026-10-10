@@ -19,6 +19,7 @@ const (
 	AnswerVersion            = "repocue/cache-answer-1"
 	EvaluationVersion        = "repocue/cache-evaluation-1"
 	MaxCounter         int64 = 9007199254740991
+	sonnet55Model            = "claude-sonnet-5-5"
 )
 
 type Provider struct {
@@ -104,6 +105,7 @@ type Assessment struct {
 // SupportedModels is deliberately bounded to documented structured-output
 // models. Unknown IDs fail before execution; this is not an API availability check.
 var supportedModels = map[string]bool{
+	sonnet55Model:       true,
 	"claude-sonnet-4-6": true, "claude-opus-4-6": true, "claude-opus-4-7": true,
 	"claude-sonnet-4-5-20250929": true, "claude-opus-4-5-20251101": true,
 	"claude-haiku-4-5-20251001": true,

@@ -105,6 +105,8 @@ producer, repository, cue, and evidence compatibility checks still apply.
 `repocue-codex-runner` invokes a fresh ephemeral Codex non-interactive run in
 JSONL mode with ignored user configuration and rules, read-only sandboxing,
 the selected model and reasoning setting, and benchmark output schema.
+Completed-turn JSONL events expose available usage counters [1]; they do not
+expose the CLI's complete hidden context or provider request sequence.
 
 Adapter version 3 preserves every `turn.completed` event, including a turn
 whose usage object is absent, null, or empty. Each token counter is optional:
@@ -273,6 +275,34 @@ rates. Cached input and reasoning output are subsets; cue tokens are already
 input. Missing cost data cannot be zero-filled or replaced by partial totals.
 Wrong answers remain in cost inventory.
 
+```text
+credits = ((input - cached_input) * input_rate
+         + cached_input * cached_input_rate
+         + output * output_rate) / 1000000
+```
+
+Cached input is included in input; reasoning is included in output and has
+no additional term. Supply dated credit rates applicable to the exact account,
+model and standard/fast setting. Codex credit billing has no separate
+cache-write charge; API-key usage follows separate API pricing [2].
+The estimate is not an account-billing observation.
+
+RepoCue controls submitted CLI stdin, model/reasoning/speed arguments and the
+captured final-answer schema. The CLI controls hidden context and provider
+calls. The task-first prompt retains the full cue. This path provides no cache
+TTL/breakpoint control, complete provider-wire capture or output-token cap;
+an ordered pair of CLI executions does not cap HTTP requests or charges.
+Observed cached input cannot identify which supplied source was cached.
+Reducing the cue may reduce both input and cached tokens; compare complete
+paired credits with quality instead of optimizing cache hit ratio alone.
+
+Without `--runner`, actual preparation retains both cue inputs and their
+timings, pins, policy, schema and repository content basis. Record the actual
+RepoCue executable's path and digest alongside the prepared evidence;
+preparation does not automatically retain executable identity.
+Submitted stdin is captured only at an explicit attempt. This is input
+preflight evidence, not a model run, correctness assessment or savings result.
+
 Summary validates frozen and captured evidence, then calculates matched
 overview-minus-task differences before medians/ranges. Required pair coverage,
 successful tasks, and complete delivery gate the verdict. Three repeats are
@@ -298,3 +328,9 @@ and unknown attempts suppress complete totals. Cache intentions do not establish
 hits. Savings verdicts require observed reuse and complete successful quality
 with bound independent compliance assessments. See [Prompt Cache Evaluation](PROMPT_CACHING.md)
 for source boundaries, local fixture limits, contracts, and explicit commands.
+
+## References
+
+[1] OpenAI. "Non-interactive mode." ChatGPT Learn. Accessed: Oct. 9, 2026. [Online]. Available: https://learn.chatgpt.com/docs/non-interactive-mode
+
+[2] OpenAI. "Pricing." ChatGPT Learn. Accessed: Oct. 9, 2026. [Online]. Available: https://learn.chatgpt.com/docs/pricing

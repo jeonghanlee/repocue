@@ -25,7 +25,8 @@ budget metadata. Source bytes are unchanged. Full wire bytes must fit the
 benchmark's estimated context budget; required content is never truncated.
 
 Reusable identity includes the model, API version, TTL, system instructions,
-output schema, output bound, and first block. Changing only task/Git metadata
+output schema, fixed thinking/effort settings when present, output bound,
+and first block. Changing only task/Git metadata
 preserves that identity. Changing selected content or settings changes it.
 This local identity does not prove provider eligibility or a cache hit.
 
@@ -102,12 +103,21 @@ Provider responses permit extension fields while duplicate members and unsafe
 counters still fail. The [answer example](benchmarks/prompt-cache-answer-v1.json)
 is illustrative schema data, not a captured provider answer.
 
-The supported local model profiles are `claude-sonnet-4-6`, `claude-opus-4-6`,
+The supported local model profiles are `claude-sonnet-5-5`,
+`claude-sonnet-4-6`, `claude-opus-4-6`,
 `claude-opus-4-7`, `claude-sonnet-4-5-20250929`,
 `claude-opus-4-5-20251101`, and `claude-haiku-4-5-20251001`.
 They use API version `2023-06-01` and explicit `5m` or `1h` TTL. This list is
 a bounded adapter profile, not a live availability guarantee. Provider-specific
 minimum cache sizes and model output limits still apply.
+
+Sonnet 5.5 freezes `thinking.type=between_tools` and
+`output_config.effort=high` alongside `output_config.format`. Without tools,
+this thinking setting returns text [1]. Neither setting is a public benchmark
+control. Older profiles omit both fields, preserving their request bytes and
+reusable identities. An unexpected thinking block fails the text-only answer
+contract; complete compatible usage and its cost remain visible independently.
+Local TLS verification does not establish provider availability or cache reuse.
 
 | Software bound | Allowed range |
 | --- | --- |
@@ -162,3 +172,51 @@ HTTP wall time is observed separately from preparation process costs. Account
 billing, CPU, memory, filesystem I/O, task-ready latency, and time to first token
 remain `not_observed`. Local synthetic TLS fixtures verify these software
 rules; real cache activity and savings require actual authorized provider runs.
+
+## Codex CLI companion measurement
+
+Use the existing `evaluate-task` overview/task comparison for Codex CLI.
+It records total input, cached input, output, optional reasoning output,
+dated credit estimates, cue/adapter duration, supported command events,
+source delivery, and independently assessed task correctness. See
+[Evaluation](EVALUATION.md#independent-task-comparison) and the
+[task benchmark reference](benchmarks/task-context-v1.md).
+Codex credits have no separate cache-write charge; API-key usage has its own
+pricing [2]. Claude USD estimates and Codex credits remain separate populations.
+
+Prepare the tracked explanation benchmark without selecting or running a model:
+
+```bash
+task=docs/benchmarks/task-context-v1/explanation.json
+evidence=/absolute/path/outside/the/evaluated/checkout
+repocue evaluate-task --task-file "$task" --output-directory "$evidence"
+```
+
+Use an already initialized maintained cache. Without `--runner`, preparation
+freezes actual refresh/overview/task outputs, timings, source pins, policy,
+answer schema and repository basis in a unique child. Record the actual
+RepoCue executable's path and digest alongside that evidence; preparation
+does not automatically retain executable identity.
+It does not capture submitted stdin until an explicit runner attempt.
+
+RepoCue supplies CLI stdin, model/reasoning/speed arguments and the final-answer
+schema. The CLI controls its hidden context and provider calls. The existing
+task-first prompt includes the complete cue; this path adds no explicit cache
+boundary, TTL control, full provider-wire capture or output-token cap. Two CLI
+executions do not bound HTTP request count or charges. Cached-input counters
+do not identify which original source was reused. A smaller cue can reduce
+both input and cached tokens; compare complete paired credits and quality
+instead of maximizing cache hit ratio.
+
+Paid execution requires separately frozen model/settings, CLI version,
+applicable dated credit rates, independent assessment policy and spending
+conditions. Start with one authorized explanation A/B pair, then stop for
+the continuation decision. The full schedule remains nine pairs and eighteen
+executions including the pilot. No-model preparation establishes input
+readiness only; it establishes no provider behavior, correctness or savings.
+
+## References
+
+[1] Anthropic. "Claude Sonnet 5.5 migration guide." Claude Platform Docs. Accessed: Oct. 9, 2026. [Online]. Available: https://platform.claude.com/docs/en/models/sonnet-5-5/migration-guide
+
+[2] OpenAI. "Pricing." ChatGPT Learn. Accessed: Oct. 9, 2026. [Online]. Available: https://learn.chatgpt.com/docs/pricing

@@ -27,6 +27,14 @@ Keep task, Git basis, freshness, budget, omissions, and warnings after its
 explicit cache boundary. Repository text does not acquire system authority.
 Include all preceding settings and output schema in reusable identity.
 
+Freeze model-specific thinking and effort along with model, API version, TTL,
+system instructions, output schema and output bound. Sonnet 5.5 uses
+`thinking.type=between_tools` and `output_config.effort=high` for the existing
+text-only, tool-free contract. Preserve `output_config.format`. Other supported
+profiles omit the new fields and retain their exact wire bytes and reusable
+identities. Unknown profiles fail before HTTP. Unexpected thinking blocks fail
+answer validation without discarding complete compatible usage or its cost.
+
 Use standard Go HTTP for one explicit bounded non-streaming Messages request.
 An exclusive attempt directory and start journal precede execution. Validate
 source bytes and repository basis before send and basis after send. Retain
